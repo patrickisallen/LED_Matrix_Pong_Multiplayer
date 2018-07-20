@@ -6,8 +6,9 @@
 #include <ncurses.h>
 #include <string.h>
 #include <unistd.h>
+#include "helper.h"
 
-#define DELAY 30000
+#define DELAY 100
 
 typedef struct paddle {
 	/* paddle variables */
@@ -32,14 +33,21 @@ typedef struct dimensions {
 	int y;
 } dimensions_t;
 
-void draw_ball(ball_t *input);
-void draw_paddle(paddle_t *paddle);
-void draw_score(paddle_t *inpt_paddle, dimensions_t *wall);
-void paddle_collisions(ball_t *inpt_ball, paddle_t *inpt_paddle);
-void paddle_pos(paddle_t *pddl, dimensions_t *wall, char dir);
+static void draw_ball(ball_t *input);
+static void draw_paddle(paddle_t *paddle);
+//void draw_score(paddle_t *inpt_paddle, dimensions_t *wall);
+static void paddle_collisions(ball_t *inpt_ball, paddle_t *inpt_paddle);
+static void paddle_pos(paddle_t *pddl, dimensions_t *wall, char dir);
 
-int wall_collisions(ball_t *usr_ball, dimensions_t *walls);
+static int wall_collisions(ball_t *usr_ball, dimensions_t *walls);
 int kbdhit();
+
+/*
+ * TODO: This should call the ledMatrix_setPixel in the ledMatrix file
+ */
+void setPixelOn(int x, int y, int color) {
+	mvprintw(x, y, "X"); // ncurses function
+}
 
 int main(int argc, char **argv)
 {
@@ -48,15 +56,16 @@ int main(int argc, char **argv)
 	noecho();
 	curs_set(0);
 
-	dimensions_t walls = { 0 };
-	getmaxyx(stdscr, walls.y, walls.x); /* get dimensions */
+	dimensions_t walls = { 32, 16};
+	//getmaxyx(stdscr, walls.y, walls.x); /* get dimensions */
 
 	/* set the paddle variables */
 	paddle_t usr_paddle = { 0 };
 
 	usr_paddle.x = 5;
 	usr_paddle.y = 11;
-	usr_paddle.len = walls.y / 4; usr_paddle.score = 0; 
+	usr_paddle.len = walls.y / 4;
+	usr_paddle.score = 0;
 
 	/* set the ball */
 	ball_t usr_ball = { 0 };
@@ -76,14 +85,14 @@ int main(int argc, char **argv)
 
 	while (run) {
 		while (kbdhit()) {
-			getmaxyx(stdscr, walls.y, walls.x);
+			//getmaxyx(stdscr, walls.y, walls.x);
 			clear(); /* clear screen of all printed chars */
 
 			draw_ball(&usr_ball);
 			draw_paddle(&usr_paddle);
-			draw_score(&usr_paddle, &walls);
+//			draw_score(&usr_paddle, &walls);
 			refresh(); /* draw to term */
-			usleep(DELAY);
+			Helper_milliSleep(DELAY);
 
 			/* set next positions */
 			usr_ball.next_x = usr_ball.x + usr_ball.x_vel;
@@ -110,7 +119,7 @@ int main(int argc, char **argv)
 		case 'p': /* pause functionality, because why not */
 			mvprintw(1, 0, "PAUSE - press any key to resume");
 			while (getch() == ERR) {
-				usleep(DELAY * 7);
+				Helper_milliSleep(7);
 			}
 			break;
 
@@ -135,7 +144,7 @@ int main(int argc, char **argv)
  * output   : void
  */
 
-void paddle_pos(paddle_t *pddl, dimensions_t *wall, char dir)
+static void paddle_pos(paddle_t *pddl, dimensions_t *wall, char dir)
 {
 	if (dir == 'j') { /* moving down */
 		if (pddl->y + pddl->len + 1 <= wall->y)
@@ -155,7 +164,7 @@ void paddle_pos(paddle_t *pddl, dimensions_t *wall, char dir)
  * input    : ball_t *, dimensions_t *
  * output   : nothing (stored within the structs)
  */
-int wall_collisions(ball_t *usr_ball, dimensions_t *walls)
+static int wall_collisions(ball_t *usr_ball, dimensions_t *walls)
 {
 	/* check if we're supposed to leave quick */
 	if (usr_ball->next_x < 0) {
@@ -181,7 +190,7 @@ int wall_collisions(ball_t *usr_ball, dimensions_t *walls)
 
 /* -------------------------------------------------------------------------- */
 
-void paddle_collisions(ball_t *inpt_ball, paddle_t *inpt_paddle)
+static void paddle_collisions(ball_t *inpt_ball, paddle_t *inpt_paddle)
 {
 	/* 
 	* simply check if next_% (because we set the next_x && next_y first) 
@@ -209,28 +218,29 @@ void paddle_collisions(ball_t *inpt_ball, paddle_t *inpt_paddle)
  * input     : ball_t * && paddle_t *
  * output    : void
  */
-void draw_ball(ball_t *input)
+static void draw_ball(ball_t *input)
 {
-	mvprintw(input->y, input->x, "O");
+	setPixelOn(input->y, input->x, 0xFFFFFF);
 	return;
 }
 
-void draw_paddle(paddle_t *paddle)
+static void draw_paddle(paddle_t *paddle)
 {
 	int i;
 
-	for (i = 0; i < paddle->len; i++)
-		mvprintw(paddle->y + i, paddle->x, "|");
+	for (i = 0; i < paddle->len; i++) {
+		setPixelOn(paddle->y + i, paddle->x, 0xFFFFFF);
+	}
 
 	return;
 }
 
-void draw_score(paddle_t *inpt_paddle, dimensions_t *wall)
-{
-	mvprintw(0, wall->x / 2 - 7, "Score: %d", inpt_paddle->score);
-
-	return;
-}
+//void draw_score(paddle_t *inpt_paddle, dimensions_t *wall)
+//{
+//	mvprintw(0, wall->x / 2 - 7, "Score: %d", inpt_paddle->score);
+//
+//	return;
+//}
 
 /* -------------------------------------------------------------------------- */
 
