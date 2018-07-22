@@ -145,5 +145,6 @@ local.properties
 !.vscode/launch.json
 !.vscode/extensions.json
 
+driver/bb-kernel/*
 
 # End of https://www.gitignore.io/api/c,linux,eclipse,visualstudiocode
