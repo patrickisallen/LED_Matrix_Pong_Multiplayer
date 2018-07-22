@@ -123,7 +123,6 @@ static void bang_clock(void)
     // Bit-bang the clock gpio
     // Notes: Before program writes, must make sure it's on the 0 index
     gpio_set_value(CLK_PIN, 1);
-    //TODO: try sleep here
     gpio_set_value(CLK_PIN, 0);
 
     return;
@@ -137,6 +136,7 @@ static void bang_latch(void)
 {
     gpio_set_value(LATCH_PIN, 1);
     //TODO: try sleep here
+    msleep(1);
     gpio_set_value(LATCH_PIN, 0);
 
     return;
@@ -176,8 +176,8 @@ static void set_row(int rowNum)
 
     // Write on the row pins
     gpio_set_value(A_PIN, bits[0]);
-    gpio_set_value(A_PIN, bits[1]);
-    gpio_set_value(A_PIN, bits[2]);
+    gpio_set_value(B_PIN, bits[1]);
+    gpio_set_value(C_PIN, bits[2]);
 
     return;
 }
@@ -235,7 +235,7 @@ static void refresh_screen(void)
             bang_clock();
         }
         bang_latch();
-        msleep(DELAY_IN_MS); // Sleep for delay
+        // msleep(DELAY_IN_MS); // Sleep for delay
     }
 
     return;
@@ -259,23 +259,28 @@ static void set_pixel(int x, int y, int colour)
 static void drive_matrix(void)
 {
     // Reset the screen
-    int i;
+    volatile int i;
     memset(screen, 0, sizeof(screen));
 
     // Setup pins
     init_pins();
 
-    for (i = 0; i < 16; i++)
-    {
-        set_pixel(i, i, 1);
-        set_pixel(i, 32 - 1 - i, 2);
-    }
+    set_pixel(8, 31, 1);
+    set_pixel(7, 31, 1);
+    set_pixel(9, 31, 1);
+
+    // for (i = 0; i < 16; i++)
+    // {
+    //     set_pixel(i, i, 1);
+    //     set_pixel(i, 32 - 1 - i, 2);
+    // }
     i = 0;
     printk(KERN_INFO "Starting the program\n");
     while (i < 1000)
     {
         refresh_screen();
         i++;
+        // msleep(20);
     }
 }
 
