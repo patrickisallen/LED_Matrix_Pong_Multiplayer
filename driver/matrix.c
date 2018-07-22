@@ -35,7 +35,7 @@
 static int screen[32][16];
 
 //look up datasheet
-static void exportAndOut(int pinNum)
+static void export_pin(int pinNum)
 {
     // Export the gpio pins
     gpio_request(pinNum, "sysfs");
@@ -45,7 +45,7 @@ static void exportAndOut(int pinNum)
     return;
 }
 
-static void unexport_gpio_pins(void)
+static void unexport_pins(void)
 {
     gpio_unexport(RED1_PIN);
     gpio_unexport(GREEN1_PIN);
@@ -63,10 +63,10 @@ static void unexport_gpio_pins(void)
     gpio_unexport(C_PIN);
 }
 
-static void unregister_gpio_pins(void)
+static void unregister_pins(void)
 {
 
-    unexport_gpio_pins();
+    unexport_pins();
 
     gpio_free(RED1_PIN);
     gpio_free(GREEN1_PIN);
@@ -88,53 +88,55 @@ static void unregister_gpio_pins(void)
 }
 
 /**
- * ledMatrix_setupPins
+ * init_pins
  * Setup the pins used by the led matrix, by exporting and set the direction to out
  */
-static void ledMatrix_setupPins(void)
+static void init_pins(void)
 {
     // !Upper led
-    exportAndOut(RED1_PIN);
-    exportAndOut(GREEN1_PIN);
-    exportAndOut(BLUE1_PIN);
+    export_pin(RED1_PIN);
+    export_pin(GREEN1_PIN);
+    export_pin(BLUE1_PIN);
 
     // Lower led
-    exportAndOut(RED2_PIN);
-    exportAndOut(GREEN2_PIN);
-    exportAndOut(BLUE2_PIN);
+    export_pin(RED2_PIN);
+    export_pin(GREEN2_PIN);
+    export_pin(BLUE2_PIN);
 
     // Timing
-    exportAndOut(CLK_PIN);
-    exportAndOut(LATCH_PIN);
+    export_pin(CLK_PIN);
+    export_pin(LATCH_PIN);
 
     // Row Select
-    exportAndOut(A_PIN);
-    exportAndOut(B_PIN);
-    exportAndOut(C_PIN);
+    export_pin(A_PIN);
+    export_pin(B_PIN);
+    export_pin(C_PIN);
 
     return;
 }
 /** 
- *  ledMatrix_clock
+ *  bang_clock
  *  Generate the clock pins
  */
-static void ledMatrix_clock(void)
+static void bang_clock(void)
 {
     // Bit-bang the clock gpio
     // Notes: Before program writes, must make sure it's on the 0 index
     gpio_set_value(CLK_PIN, 1);
+    //TODO: try sleep here
     gpio_set_value(CLK_PIN, 0);
 
     return;
 }
 
 /**
- *  ledMatrix_latch
+ *  bang_latch
  *  Generate the latch pins
  */
-static void ledMatrix_latch(void)
+static void bang_latch(void)
 {
     gpio_set_value(LATCH_PIN, 1);
+    //TODO: try sleep here
     gpio_set_value(LATCH_PIN, 0);
 
     return;
@@ -147,7 +149,7 @@ static void ledMatrix_latch(void)
  *      int * arr: pointer to array to be filled with bits
  *      int input: integer to be converted to bits
  */
-static void ledMatrix_bitsFromInt(int *arr, int input)
+static void int_to_bits(int input, int *arr)
 {
     arr[0] = input & 1;
 
@@ -161,79 +163,78 @@ static void ledMatrix_bitsFromInt(int *arr, int input)
 }
 
 /**
- *  ledMatrix_setRow
+ *  set_row
  *  Set LED Matrix row
  *  @params:
  *      int rowNum: the rowNumber to be inputted to row pins
  */
-static void ledMatrix_setRow(int rowNum)
+static void set_row(int rowNum)
 {
     // Convert rowNum single bits from int
-    int arr[3] = {0, 0, 0};
-    ledMatrix_bitsFromInt(arr, rowNum);
+    int bits[3] = {0, 0, 0};
+    int_to_bits(rowNum, bits);
 
     // Write on the row pins
-    gpio_set_value(A_PIN, arr[0]);
-    gpio_set_value(A_PIN, arr[1]);
-    gpio_set_value(A_PIN, arr[2]);
+    gpio_set_value(A_PIN, bits[0]);
+    gpio_set_value(A_PIN, bits[1]);
+    gpio_set_value(A_PIN, bits[2]);
 
     return;
 }
 
 /**
- *  ledMatrix_setColourTop
+ *  set_colour_top
  *  Set the colour of the top part of the LED
  *  @params:
  *      int colour: colour to be set
  */
-static void ledMatrix_setColourTop(int colour)
+static void set_colour_top(int colour)
 {
-    int arr[3] = {0, 0, 0};
-    ledMatrix_bitsFromInt(arr, colour);
+    int bits[3] = {0, 0, 0};
+    int_to_bits(colour, bits);
 
-    gpio_set_value(RED1_PIN, arr[0]);
-    gpio_set_value(GREEN1_PIN, arr[1]);
-    gpio_set_value(BLUE1_PIN, arr[2]);
+    gpio_set_value(RED1_PIN, bits[0]);
+    gpio_set_value(GREEN1_PIN, bits[1]);
+    gpio_set_value(BLUE1_PIN, bits[2]);
 
     return;
 }
 
 /**
- *  ledMatrix_setColourBottom
+ *  set_colour_bottom
  *  Set the colour of the bottom part of the LED
  *  @params:
  *      int colour: colour to be set
  */
-static void ledMatrix_setColourBottom(int colour)
+static void set_colour_bottom(int colour)
 {
-    int arr[3] = {0, 0, 0};
-    ledMatrix_bitsFromInt(arr, colour);
+    int bits[3] = {0, 0, 0};
+    int_to_bits(colour, bits);
 
-    gpio_set_value(RED2_PIN, arr[0]);
-    gpio_set_value(GREEN2_PIN, arr[1]);
-    gpio_set_value(BLUE2_PIN, arr[2]);
+    gpio_set_value(RED2_PIN, bits[0]);
+    gpio_set_value(GREEN2_PIN, bits[1]);
+    gpio_set_value(BLUE2_PIN, bits[2]);
 
     return;
 }
 /**
- *  ledMatrix_refresh
+ *  refresh_matrix
  *  Fill the LED Matrix with the respective pixel colour
  */
-static void ledMatrix_refresh(void)
+static void refresh_screen(void)
 {
     int rowNum;
     for (rowNum = 0; rowNum < 8; rowNum++)
     {
         int colNum;
-        ledMatrix_setRow(rowNum);
+        set_row(rowNum);
         for (colNum = 0; colNum < 32; colNum++)
         {
-            ledMatrix_setColourTop(screen[colNum][rowNum]);
-            ledMatrix_setColourBottom(screen[colNum][rowNum + 8]);
-            ledMatrix_clock();
+            set_colour_top(screen[colNum][rowNum]);
+            set_colour_bottom(screen[colNum][rowNum + 8]);
+            bang_clock();
         }
-        ledMatrix_latch();
-        // udelay(100);
+        bang_latch();
         msleep(DELAY_IN_MS); // Sleep for delay
     }
 
@@ -241,14 +242,14 @@ static void ledMatrix_refresh(void)
 }
 
 /**
- *  ledMatrix_setPixel
+ *  set_pixel
  *  Set the pixel selected on LED MAtrix with the colour selected
  *  @params:
  *      int x: x-axis
  *      int y: y-axis
  *      int colour: colour selected
  */
-static void ledMatrix_setPixel(int x, int y, int colour)
+static void set_pixel(int x, int y, int colour)
 {
     screen[y][x] = colour;
 
@@ -262,18 +263,18 @@ static void drive_matrix(void)
     memset(screen, 0, sizeof(screen));
 
     // Setup pins
-    ledMatrix_setupPins();
+    init_pins();
 
     for (i = 0; i < 16; i++)
     {
-        ledMatrix_setPixel(i, i, 1);
-        ledMatrix_setPixel(i, 32 - 1 - i, 2);
+        set_pixel(i, i, 1);
+        set_pixel(i, 32 - 1 - i, 2);
     }
     i = 0;
     printk(KERN_INFO "Starting the program\n");
     while (i < 1000)
     {
-        ledMatrix_refresh();
+        refresh_screen();
         i++;
     }
 }
@@ -297,30 +298,30 @@ struct file_operations fops = {
     .write = write,
 };
 
-static struct miscdevice morsecode_driver = {
+static struct miscdevice matrix_driver = {
     .minor = MISC_DYNAMIC_MINOR, // Let the system assign one.
     .name = MY_DEVICE_FILE,      // /dev/.... file.
     .fops = &fops                // Callback functions.
 };
 
-static int __init morsecode_init(void)
+static int __init matrix_init(void)
 {
     int ret;
     printk(KERN_INFO "----> matrix driver init(): file /dev/%s.\n", MY_DEVICE_FILE);
 
-    ret = misc_register(&morsecode_driver);
+    ret = misc_register(&matrix_driver);
     return ret;
 }
 
-static void __exit morsecode_exit(void)
+static void __exit matrix_exit(void)
 {
     printk(KERN_INFO "<---- matrix driver exit().\n");
-    unregister_gpio();
-    misc_deregister(&morsecode_driver);
+    unregister_pins();
+    misc_deregister(&matrix_driver);
 }
 
-module_init(morsecode_init);
-module_exit(morsecode_exit);
+module_init(matrix_init);
+module_exit(matrix_exit);
 
 MODULE_AUTHOR("Scott Plummer");
 MODULE_DESCRIPTION("An LED driver");
