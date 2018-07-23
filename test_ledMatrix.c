@@ -306,9 +306,9 @@ static void ledMatrix_setPixel(int x, int y, int colour)
     return;
 }
 
-// static void ledMatrix_paddle(int length, int colour) {
-//     ledMatrix_setPixel(0, )
-// }
+static void ledMatrix_turnOffPixel(int x, int y) {
+    ledMatrix_setPixel(x, y, 0);
+}
 
 
 /*** MAIN ***/
