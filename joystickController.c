@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <pthread.h>
 #include <time.h>
+#include "joystickController.h"
 
 const char* position[] = {"up","right","down","left","push","none"};
 const char* directionDir[] = {"/sys/class/gpio/gpio26/value","/sys/class/gpio/gpio47/value","/sys/class/gpio/gpio46/value","/sys/class/gpio/gpio65/value","/sys/class/gpio/gpio27/value"};
