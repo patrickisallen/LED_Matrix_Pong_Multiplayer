@@ -306,11 +306,6 @@ static void ledMatrix_setPixel(int x, int y, int colour)
     return;
 }
 
-// static void ledMatrix_paddle(int length, int colour) {
-//     ledMatrix_setPixel(0, )
-// }
-
-
 /*** MAIN ***/
 int main()
 {   
@@ -320,27 +315,14 @@ int main()
     // Setup pins
     ledMatrix_setupPins();
    
-    for ( int i = 0; i < 5; i++ ) {
-        
+    for ( int i = 0; i < 16; i++ ) {
+        ledMatrix_setPixel(i, i, 1);
+        ledMatrix_setPixel(i, 32-1-i , 2);
    }
 
-    time_t t;
-   srand((unsigned) time(&t));
-    int count = 0;
     printf("Starting the program\n");
     while(1) {
-        int ranRow = rand() % 16;
-        int ranCol = rand() % 32;
-        int rancolour = rand() % 16;
-        ledMatrix_setPixel(ranRow, ranCol, rancolour);
         ledMatrix_refresh();
-
-        if(count == 1024) {
-            memset(screen, 0, sizeof(screen));
-            count = 0;
-        }
-        printf("Count: %d\n", count);
-        count++;
     }
 
     return 0;

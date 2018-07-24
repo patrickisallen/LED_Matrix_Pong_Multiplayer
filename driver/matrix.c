@@ -22,25 +22,17 @@
 #define B_PIN 77
 #define C_PIN 70
 
-/*Available colours */
-#define RED 1
-#define GREEN 2
-#define YELLOW 3
-#define BLUE 4
-#define PURPLE 5
-#define TEAL 6
-
 #define DELAY_IN_MS 5
 /* LED Screen Values */
 static int screen[32][16];
 
 //look up datasheet
-static void export_pin(int pinNum)
+static void export_pin(int pin_num)
 {
     // Export the gpio pins
-    gpio_request(pinNum, "sysfs");
-    gpio_direction_output(pinNum, true);
-    gpio_export(pinNum, false);
+    gpio_request(pin_num, "sysfs");
+    gpio_direction_output(pin_num, true);
+    gpio_export(pin_num, true);
 
     return;
 }
@@ -136,7 +128,6 @@ static void bang_latch(void)
 {
     gpio_set_value(LATCH_PIN, 1);
     //TODO: try sleep here
-    msleep(1);
     gpio_set_value(LATCH_PIN, 0);
 
     return;
@@ -233,54 +224,25 @@ static void refresh_screen(void)
             set_colour_top(screen[colNum][rowNum]);
             set_colour_bottom(screen[colNum][rowNum + 8]);
             bang_clock();
+            // usleep_range(1000, 1000);
         }
+
         bang_latch();
+        usleep_range(4500, 4500);
         // msleep(DELAY_IN_MS); // Sleep for delay
     }
 
     return;
 }
 
-/**
- *  set_pixel
- *  Set the pixel selected on LED MAtrix with the colour selected
- *  @params:
- *      int x: x-axis
- *      int y: y-axis
- *      int colour: colour selected
- */
-static void set_pixel(int x, int y, int colour)
-{
-    screen[y][x] = colour;
-
-    return;
-}
-
 static void drive_matrix(void)
 {
-    // Reset the screen
-    volatile int i;
-    memset(screen, 0, sizeof(screen));
-
-    // Setup pins
-    init_pins();
-
-    set_pixel(8, 31, 1);
-    set_pixel(7, 31, 1);
-    set_pixel(9, 31, 1);
-
-    // for (i = 0; i < 16; i++)
-    // {
-    //     set_pixel(i, i, 1);
-    //     set_pixel(i, 32 - 1 - i, 2);
-    // }
-    i = 0;
+    volatile int i = 0;
     printk(KERN_INFO "Starting the program\n");
-    while (i < 1000)
+    while (i < 100)
     {
         refresh_screen();
         i++;
-        // msleep(20);
     }
 }
 
@@ -291,6 +253,13 @@ static ssize_t write(struct file *file,
                      const char *buff, size_t count, loff_t *ppos)
 {
 
+    memset(screen, 0, sizeof(screen));
+    if (copy_from_user(screen, buff, count))
+    {
+        return -EFAULT;
+    }
+
+    printk(KERN_INFO "Read %p, with size %d\n", screen, count);
     drive_matrix();
     return count;
 }
@@ -315,6 +284,8 @@ static int __init matrix_init(void)
     printk(KERN_INFO "----> matrix driver init(): file /dev/%s.\n", MY_DEVICE_FILE);
 
     ret = misc_register(&matrix_driver);
+    init_pins();
+
     return ret;
 }
 
