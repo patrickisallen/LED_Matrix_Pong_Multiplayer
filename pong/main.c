@@ -18,6 +18,7 @@
 #include "pong.h"
 #include "ledMatrix.h"
 #include "joystick.h"
+#include "display.h"
 
 static pthread_mutex_t mainMutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -27,6 +28,7 @@ static void init()
 	Pong_init();
 	LEDMatrix_init();
 	Joystick_init();
+	Display_init();
 }
 
 static void terminate()

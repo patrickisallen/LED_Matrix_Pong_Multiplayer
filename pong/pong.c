@@ -6,7 +6,7 @@
 #include "helper.h"
 #include "ledMatrix.h"
 #include "joystick.h"
-#include "colours.h"
+#include "display.h"
 
 #define DELAY 100
 
@@ -15,7 +15,6 @@ typedef struct paddle {
 	int x;
 	int y;    /* y is the 'top' of the paddle */
 	int len;
-	int score;
 } paddle_t;
 
 typedef struct ball {
@@ -40,40 +39,45 @@ static void paddle_collisions(ball_t *inpt_ball, paddle_t *inpt_paddle);
 static void paddle_pos(paddle_t *pddl, dimensions_t *wall, int dir);
 
 static int wall_collisions(ball_t *usr_ball, dimensions_t *walls);
+static void displayGameOver();
 int kbdhit();
 
 // matrix of x y
 static int m[SCREEN_WIDTH][SCREEN_HEIGHT];
 
-/*
- * TODO: This should call the ledMatrix_setPixel in the ledMatrix file
- */
 void setPixelOn(int x, int y, int colour) {
 	m[y][x] = colour;
 }
 
 static paddle_t usr_paddle = { 0 }; /* set the paddle variables */
 static ball_t usr_ball = { 0 }; /* set the ball */
-dimensions_t walls = { 32, 16};
-static int keypress;
+dimensions_t walls = {SCREEN_WIDTH, SCREEN_HEIGHT};
+static int score = 0;
 
 static pthread_t pthreadPong;
 static _Bool run = false;
+static _Bool playing = false;
 
 static void* runPong();
 
 void Pong_init() {
-
 
 	/* initialize curses */
 //	initscr();
 //	noecho();
 //	curs_set(0);
 
+	run = true;
+	playing = true;
+	pthread_create(&pthreadPong, NULL, &runPong, NULL);
+
+}
+
+static void pongGameInit() {
+	score = 0;
 	usr_paddle.x = 5;
 	usr_paddle.y = 11;
 	usr_paddle.len = walls.y / 4;
-	usr_paddle.score = 0;
 
 	usr_ball.x = walls.x / 2;
 	usr_ball.y = walls.y / 2;
@@ -81,15 +85,6 @@ void Pong_init() {
 	usr_ball.next_y = 0;
 	usr_ball.x_vel = 1;
 	usr_ball.y_vel = 1;
-
-	/* we actually have to store the user's keypress somewhere... */
-	keypress = 0;
-//	nodelay(stdscr, TRUE);
-//	scrollok(stdscr, TRUE);
-
-	run = true;
-	pthread_create(&pthreadPong, NULL, &runPong, NULL);
-
 }
 
 static void clearMatrix()
@@ -104,58 +99,50 @@ static void clearMatrix()
 static void* runPong()
 {
 	while (run) {
-		//while (kbdhit()) {
-//			clear(); /* clear screen of all printed chars */
+		pongGameInit();
+		while(playing) {
+			//while (kbdhit()) {
+	//			clear(); /* clear screen of all printed chars */
 
-		draw_ball(&usr_ball);
-		draw_paddle(&usr_paddle);
-//			refresh(); /* draw to term */
-		LEDMatrix_update(m);
-		clearMatrix();
-		Helper_milliSleep(DELAY);
+			draw_ball(&usr_ball);
+			draw_paddle(&usr_paddle);
+	//			refresh(); /* draw to term */
+			LEDMatrix_update(m); // TODO scott: this should call the driver to update the matrix
+			clearMatrix();
+			Helper_milliSleep(DELAY);
 
-		/* set next positions */
-		usr_ball.next_x = usr_ball.x + usr_ball.x_vel;
-		usr_ball.next_y = usr_ball.y + usr_ball.y_vel;
+			/* set next positions */
+			usr_ball.next_x = usr_ball.x + usr_ball.x_vel;
+			usr_ball.next_y = usr_ball.y + usr_ball.y_vel;
 
-		/* check for collisions */
-		paddle_collisions(&usr_ball, &usr_paddle);
-		if (wall_collisions(&usr_ball, &walls)) {
-			run = false;
-			LEDMatrix_clear();
-			break;
-		}
-		//}
-
-		/* we fell out, get the key press */
-		//keypress = getchar();
-		if (Joystick_getDirection() == UP){
-			paddle_pos(&usr_paddle, &walls, 1);
-		} else {
-			if (Joystick_getDirection() == DOWN){
-				paddle_pos(&usr_paddle, &walls, 0);
+			/* check for collisions */
+			paddle_collisions(&usr_ball, &usr_paddle);
+			if (wall_collisions(&usr_ball, &walls)) {
+				playing = false;
+				LEDMatrix_clear();
+				break;
 			}
+			//}
+
+			/* we fell out, get the key press */
+			if (Joystick_getDirection() == UP){
+				paddle_pos(&usr_paddle, &walls, 1);
+			} else {
+				if (Joystick_getDirection() == DOWN){
+					paddle_pos(&usr_paddle, &walls, 0);
+				}
+			}
+
+			Display_num(score);
 		}
 
-		switch (keypress) {
+	//	endwin();
 
-		case 'p': /* pause functionality, because why not */
-//			mvprintw(1, 0, "PAUSE - press any key to resume");
-//			while (getch() == ERR) {
-//				Helper_milliSleep(7);
-//			}
-			break;
-
-		case 'q':
-			run = false;
-			break;
-
-		}
+		printf("GAME OVER\nFinal Score: %d\n", score);
+		displayGameOver();
+		while(Joystick_getDirection() != CENTER){}
+		playing = true;
 	}
-
-//	endwin();
-
-	printf("GAME OVER\nFinal Score: %d\n", usr_paddle.score);
 
 	return 0;
 
@@ -227,7 +214,7 @@ static void paddle_collisions(ball_t *inpt_ball, paddle_t *inpt_paddle)
 			inpt_ball->y <= 
 			inpt_paddle->y + inpt_paddle->len) {
 
-			inpt_paddle->score++;
+			score++;
 			inpt_ball->x_vel *= -1;
 		}
 	}
@@ -258,6 +245,15 @@ static void draw_paddle(paddle_t *paddle)
 	}
 
 	return;
+}
+
+static void displayGameOver()
+{
+	LEDMatrix_clear();
+	clearMatrix();
+	// TODO: display char here
+	LEDMatrix_update(m);
+
 }
 
 /*
