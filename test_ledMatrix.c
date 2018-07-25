@@ -321,9 +321,9 @@ void ledMatrix_setMatrix(int m[][SCREEN_HEIGHT])
 	}
 }
 
-// static void ledMatrix_paddle(int length, int colour) {
-//     ledMatrix_setPixel(0, )
-// }
+static void ledMatrix_turnOffPixel(int x, int y) {
+    ledMatrix_setPixel(x, y, 0);
+}
 
 
 /*** MAIN ***/
