@@ -1,5 +1,5 @@
-CC_C = gcc 
-#CC_C = arm-linux-gnueabihf-gcc 
+#CC_C = gcc 
+CC_C = arm-linux-gnueabihf-gcc 
 TARGET = pong
 OUTDIR = $(HOME)/cmpt433/public/myApps
 CFLAGS = -Wall -g -std=c99 -D _POSIX_C_SOURCE=200809L -Werror -g
@@ -10,7 +10,7 @@ PTHREAD = -pthread
 all: pong
 
 pong:
-	$(CC_C) $(CFLAGS) $(PTHREAD) pong.c helper.c -o $(OUTDIR)/$(TARGET) -lpthread -lncurses
+	$(CC_C) $(CFLAGS) $(PTHREAD) main.c pong.c ledMatrix.c helper.c joystick.c gpio.c -o $(OUTDIR)/$(TARGET) -lpthread
 	
 clean:
 	rm $(OUTDIR)/$(TARGET)

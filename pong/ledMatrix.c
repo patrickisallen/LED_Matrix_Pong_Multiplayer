@@ -1,11 +1,14 @@
-/********************************************************************
- * !!!!!!!!!!!!!!!!!!!!!!!! NOTE: DEPRICATED - use only for testing!!!!!!!!!!!!!!!!!!!!!!!
- * UPDATE THE LEDMATRIX.C in pong/
- * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+/*
+ * LEDMatrix.c
  *
+ *  Created on: Jul 24, 2018
+ *      Author: rscovill
+ */
+
+/********************************************************************
  *  File Name: test_ledMatrix.c
  *  Description: A simple program to display pattern on LED Matrix
- *  
+ *
  *  About 80% of the code converted from Python to C, source:
  *      https://learn.adafruit.com/connecting-a-16x32-rgb-led-matrix-panel-to-a-raspberry-pi/experimental-python-code
  *-------------------------------------------------------------------
@@ -21,6 +24,8 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <string.h>
+#include <pthread.h>
+#include <stdbool.h>
 
 /*** GLOBAL VARIABLE ***/
 /* GPIO PATH */
@@ -49,6 +54,13 @@
 #define SCREEN_HEIGHT 16
 /* LED Screen Values */
 static int screen[SCREEN_WIDTH][SCREEN_HEIGHT];
+
+// matrix of x y from outside
+static int m[SCREEN_WIDTH][SCREEN_HEIGHT];
+
+static pthread_t pthreadMatrix;
+static _Bool run = false;
+static void* runMatrix();
 
 /* FILES HANDLER */
 static int fileDesc_red1;
@@ -80,11 +92,11 @@ static void exportAndOut(int pinNum)
     }
     fprintf(gpioExP, "%d", pinNum);
     fclose(gpioExP);
-        
+
     // Change the direction into out
     char fileNameBuffer[1024];
     sprintf(fileNameBuffer, GPIO_PATH "gpio%d/direction", pinNum);
-        
+
     FILE *gpioDirP = fopen(fileNameBuffer, "w");
     fprintf(gpioDirP, "out");
     fclose(gpioDirP);
@@ -97,7 +109,7 @@ static void exportAndOut(int pinNum)
  * Setup the pins used by the led matrix, by exporting and set the direction to out
  */
 static void ledMatrix_setupPins(void)
-{   
+{
     // !Upper led
     exportAndOut(RED1_PIN);
     fileDesc_red1 = open("/sys/class/gpio/gpio8/value", O_WRONLY, S_IWRITE);
@@ -128,12 +140,12 @@ static void ledMatrix_setupPins(void)
     exportAndOut(B_PIN);
     fileDesc_b = open("/sys/class/gpio/gpio77/value", O_WRONLY, S_IWRITE);
     exportAndOut(C_PIN);
-    fileDesc_c = open("/sys/class/gpio/gpio70/value", O_WRONLY, S_IWRITE); 
+    fileDesc_c = open("/sys/class/gpio/gpio70/value", O_WRONLY, S_IWRITE);
 
     return;
 }
 
-/** 
+/**
  *  ledMatrix_clock
  *  Generate the clock pins
  */
@@ -240,7 +252,7 @@ static void ledMatrix_setColourTop(int colour)
     char blue1_val[2];
     sprintf(blue1_val, "%d", arr[2]);
     lseek(fileDesc_blue1, 0, SEEK_SET);
-    write(fileDesc_blue1, blue1_val, 1);    
+    write(fileDesc_blue1, blue1_val, 1);
 
     return;
 }
@@ -270,7 +282,7 @@ static void ledMatrix_setColourBottom(int colour)
     char blue2_val[2];
     sprintf(blue2_val, "%d", arr[2]);
     lseek(fileDesc_blue2, 0, SEEK_SET);
-    write(fileDesc_blue2, blue2_val, 1);      
+    write(fileDesc_blue2, blue2_val, 1);
 
     return;
 }
@@ -282,7 +294,7 @@ static void ledMatrix_refresh(void)
 {
     for ( int rowNum = 0; rowNum < 8; rowNum++ ) {
         lseek(fileDesc_oe, 0, SEEK_SET);
-        write(fileDesc_oe, "1", 1); 
+        write(fileDesc_oe, "1", 1);
         ledMatrix_setRow(rowNum);
         for ( int colNum = 0; colNum < 32;  colNum++) {
             ledMatrix_setColourTop(screen[colNum][rowNum]);
@@ -291,7 +303,7 @@ static void ledMatrix_refresh(void)
         }
         ledMatrix_latch();
         lseek(fileDesc_oe, 0, SEEK_SET);
-        write(fileDesc_oe, "0", 1); 
+        write(fileDesc_oe, "0", 1);
         usleep(DELAY_IN_US); // Sleep for delay
     }
     return;
@@ -312,7 +324,7 @@ static void ledMatrix_setPixel(int x, int y, int colour)
     return;
 }
 
-void ledMatrix_setMatrix(int m[][SCREEN_HEIGHT])
+static void ledMatrix_setMatrix()
 {
 	for (int x = 0; x < SCREEN_WIDTH; x++) {
 		for (int y = 0; y < SCREEN_HEIGHT; y++) {
@@ -321,43 +333,58 @@ void ledMatrix_setMatrix(int m[][SCREEN_HEIGHT])
 	}
 }
 
-// static void ledMatrix_paddle(int length, int colour) {
-//     ledMatrix_setPixel(0, )
-// }
+static void ledMatrix_clearMatrix()
+{
+	for (int x = 0; x < SCREEN_WIDTH; x++) {
+		for (int y = 0; y < SCREEN_HEIGHT; y++) {
+			m[x][y] = 0;
+		}
+	}
+}
+
+void LEDMatrix_update(int in_m[][SCREEN_HEIGHT])
+{
+	for (int x = 0; x < SCREEN_WIDTH; x++) {
+		for (int y = 0; y < SCREEN_HEIGHT; y++) {
+			m[x][y] = in_m[x][y];
+		}
+	}
+}
+
+void LEDMatrix_clear(){
+	ledMatrix_clearMatrix();
+}
 
 
-/*** MAIN ***/
-int main()
-{   
-    // Reset the screen
-    memset(screen, 0, sizeof(screen));
+void LEDMatrix_init() {
+	// Reset the screen
+	memset(screen, 0, sizeof(screen));
 
-    // Setup pins
-    ledMatrix_setupPins();
-   
-    for ( int i = 0; i < 5; i++ ) {
-        
-   }
+	// Setup pins
+	ledMatrix_setupPins();
 
-    time_t t;
-   srand((unsigned) time(&t));
+	// clear matrix
+	ledMatrix_clearMatrix();
+
+
+	run = true;
+	pthread_create(&pthreadMatrix, NULL, &runMatrix, NULL);
+
+}
+
+static void* runMatrix() {
     int count = 0;
-    printf("Starting the program\n");
     while(1) {
-//        int ranRow = rand() % 16;
-//        int ranCol = rand() % 32;
-//        int rancolour = rand() % 16;
-        ledMatrix_setMatrix(m);
-        //ledMatrix_setPixel(ranRow, ranCol, rancolour);
+        ledMatrix_setMatrix();
         ledMatrix_refresh();
 
         if(count == 1024) {
             memset(screen, 0, sizeof(screen));
             count = 0;
         }
-        printf("Count: %d\n", count);
         count++;
     }
 
     return 0;
 }
+
