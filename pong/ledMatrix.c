@@ -15,8 +15,8 @@
  *  Created by: Janet mardjuki
  *  Date: 3 December 2015
  ********************************************************************/
-#define _BSD_SOURCE
-
+//#define _BSD_SOURCE
+#define _DEFAULT_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
