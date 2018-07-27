@@ -91,7 +91,7 @@ void UDP_server() {
 
     //------------------------------------------------------
     buf = malloc((BUFSIZE+1) * sizeof(char)); // +1 for additioinal terminating characters 
-
+    bufCpy = malloc((BUFSIZE+1) * sizeof(char));
     	while (keepRunFlag) {
 		memset(buf, '\0', BUFSIZE); //Clear buffer / fill it with null terminating characters
 		n = recvfrom(sockfd, buf, BUFSIZE, 0,
@@ -117,14 +117,14 @@ void UDP_server() {
         }
 
         if(strcmp(buf, "help\n") == 0) {
-            printf("Help command recognized!\n");
+            //printf("Help command recognized!\n");
             n = sendDatagram(help);
         } else {
-            printf("Invalid command!\n");
+            //printf("Invalid command!\n");
             n = sendDatagram(invalidMsg);
         }
 	}
-    //free(bufCpy);
+    free(bufCpy);
     free(buf);
 
 }

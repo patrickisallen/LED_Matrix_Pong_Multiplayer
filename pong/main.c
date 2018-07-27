@@ -19,6 +19,7 @@
 #include "ledMatrix.h"
 #include "joystick.h"
 #include "display.h"
+#include "udpserver.h"
 
 static pthread_mutex_t mainMutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -29,6 +30,7 @@ static void init()
 	LEDMatrix_init();
 	Joystick_init();
 	Display_init();
+	UDP_init();
 }
 
 static void terminate()
