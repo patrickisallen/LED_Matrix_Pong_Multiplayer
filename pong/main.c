@@ -20,6 +20,7 @@
 #include "joystick.h"
 #include "display.h"
 #include "udpserver.h"
+#include "udpclient.h"
 
 static pthread_mutex_t mainMutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -31,6 +32,7 @@ static void init()
 	Joystick_init();
 	Display_init();
 	UDP_init();
+	UDP_client_init();
 }
 
 static void terminate()
