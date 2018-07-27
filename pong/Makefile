@@ -10,7 +10,7 @@ PTHREAD = -pthread
 all: pong
 
 pong:
-	$(CC_C) $(CFLAGS) $(PTHREAD) main.c pong.c ledMatrix.c helper.c joystick.c gpio.c display.c -o $(OUTDIR)/$(TARGET) -lpthread
+	$(CC_C) $(CFLAGS) $(PTHREAD) main.c pong.c ledMatrix.c helper.c joystick.c gpio.c display.c udpserver.c -o $(OUTDIR)/$(TARGET) -lpthread
 	
 clean:
 	rm $(OUTDIR)/$(TARGET)

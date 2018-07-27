@@ -59,7 +59,6 @@ void appToEnd(char *inputStr, char lineBreak) {
 
 void UDP_stop() {
     pthread_join(t2, NULL);
-    Sorter_stopSorting();
     keepRunFlag = false;
 }
 
