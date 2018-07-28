@@ -1,12 +1,18 @@
-/* 
- * Brian Chrzanowski's Terminal Pong
- * Fri Dec 02, 2016 17:00
- */
-
-#include <ncurses.h>
 #include <string.h>
 #include <unistd.h>
+#include <pthread.h>
+#include <stdbool.h>
+#include <stdio.h>
 #include "helper.h"
+
+#ifdef MATRIX_DRIVER
+#include "driver.h"
+#else
+#include "ledMatrix.h"
+#endif
+
+#include "joystick.h"
+#include "display.h"
 
 #define DELAY 100
 
@@ -15,7 +21,6 @@ typedef struct paddle {
 	int x;
 	int y;    /* y is the 'top' of the paddle */
 	int len;
-	int score;
 } paddle_t;
 
 typedef struct ball {
@@ -37,38 +42,54 @@ static void draw_ball(ball_t *input);
 static void draw_paddle(paddle_t *paddle);
 //void draw_score(paddle_t *inpt_paddle, dimensions_t *wall);
 static void paddle_collisions(ball_t *inpt_ball, paddle_t *inpt_paddle);
-static void paddle_pos(paddle_t *pddl, dimensions_t *wall, char dir);
+static void paddle_pos(paddle_t *pddl, dimensions_t *wall, int dir);
 
 static int wall_collisions(ball_t *usr_ball, dimensions_t *walls);
+static void displayGameOver();
 int kbdhit();
 
-/*
- * TODO: This should call the ledMatrix_setPixel in the ledMatrix file
- */
-void setPixelOn(int x, int y, int color) {
-	mvprintw(x, y, "X"); // ncurses function
+// matrix of x y
+static int m[SCREEN_WIDTH][SCREEN_HEIGHT];
+
+
+void setPixelOn(int x, int y, int colour) {
+	m[y][x] = colour;
 }
 
-int main(int argc, char **argv)
-{
+static paddle_t usr_paddle = { 0 }; /* set the paddle variables */
+static ball_t usr_ball = { 0 }; /* set the ball */
+dimensions_t walls = {SCREEN_WIDTH, SCREEN_HEIGHT};
+static int score = 0;
+
+static pthread_t pthreadPong;
+static _Bool run = false;
+static _Bool playing = false;
+
+static void* runPong();
+
+void Pong_init() {
+
 	/* initialize curses */
-	initscr();
-	noecho();
-	curs_set(0);
+//	initscr();
+//	noecho();
+//	curs_set(0);
 
-	dimensions_t walls = { 32, 16};
-	//getmaxyx(stdscr, walls.y, walls.x); /* get dimensions */
+	run = true;
+	playing = true;
 
-	/* set the paddle variables */
-	paddle_t usr_paddle = { 0 };
+#ifdef MATRIX_DRIVER
+	Driver_init();
+#endif
 
+	pthread_create(&pthreadPong, NULL, &runPong, NULL);
+
+}
+
+static void pongGameInit() {
+	score = 0;
 	usr_paddle.x = 5;
 	usr_paddle.y = 11;
 	usr_paddle.len = walls.y / 4;
-	usr_paddle.score = 0;
-
-	/* set the ball */
-	ball_t usr_ball = { 0 };
 
 	usr_ball.x = walls.x / 2;
 	usr_ball.y = walls.y / 2;
@@ -76,22 +97,35 @@ int main(int argc, char **argv)
 	usr_ball.next_y = 0;
 	usr_ball.x_vel = 1;
 	usr_ball.y_vel = 1;
+}
 
-	/* we actually have to store the user's keypress somewhere... */
-	int keypress = 0;
-	int run = 1;
-	nodelay(stdscr, TRUE);
-	scrollok(stdscr, TRUE);
+static void clearMatrix()
+{
+	for (int x = 0; x < SCREEN_WIDTH; x++){
+		for (int y = 0; y < SCREEN_HEIGHT; y++){
+			m[x][y] = 0;
+		}
+	}
+}
 
+static void* runPong()
+{
 	while (run) {
-		while (kbdhit()) {
-			//getmaxyx(stdscr, walls.y, walls.x);
-			clear(); /* clear screen of all printed chars */
+		pongGameInit();
+		while(playing) {
+			//while (kbdhit()) {
+	//			clear(); /* clear screen of all printed chars */
 
 			draw_ball(&usr_ball);
 			draw_paddle(&usr_paddle);
-//			draw_score(&usr_paddle, &walls);
-			refresh(); /* draw to term */
+	//			refresh(); /* draw to term */
+
+#ifdef MATRIX_DRIVER
+			Driver_writeData(m);
+#else
+			LEDMatrix_update(m);
+#endif
+			clearMatrix();
 			Helper_milliSleep(DELAY);
 
 			/* set next positions */
@@ -101,41 +135,47 @@ int main(int argc, char **argv)
 			/* check for collisions */
 			paddle_collisions(&usr_ball, &usr_paddle);
 			if (wall_collisions(&usr_ball, &walls)) {
-				run = 0;
+				playing = false;
+				clearMatrix();
+
+#ifdef MATRIX_DRIVER
+				Driver_writeData(m);
+#else
+				LEDMatrix_update(m);
+#endif			
+// #ifdef MATRIX_DRIVER
+// 				Driver_clear();
+// #else
+// 				LEDMatrix_clear();
+// #endif 
 				break;
 			}
-		}
+			//}
 
-		/* we fell out, get the key press */
-		keypress = getch();
-
-
-		switch (keypress) {
-		case 'j':
-		case 'k':
-			paddle_pos(&usr_paddle, &walls, keypress);
-			break;
-
-		case 'p': /* pause functionality, because why not */
-			mvprintw(1, 0, "PAUSE - press any key to resume");
-			while (getch() == ERR) {
-				Helper_milliSleep(7);
+			/* we fell out, get the key press */
+			if (Joystick_getDirection() == UP){
+				paddle_pos(&usr_paddle, &walls, 1);
+			} else {
+				if (Joystick_getDirection() == DOWN){
+					paddle_pos(&usr_paddle, &walls, 0);
+				}
 			}
-			break;
 
-		case 'q':
-			run = 0;
-			break;
-
+			Display_num(score);
 		}
+
+	//	endwin();
+
+		printf("GAME OVER\nFinal Score: %d\n", score);
+		displayGameOver();
+		while(Joystick_getDirection() != CENTER){}
+		playing = true;
 	}
 
-	endwin();
-
-	printf("GAME OVER\nFinal Score: %d\n", usr_paddle.score);
-
 	return 0;
+
 }
+
 
 /*
  * function : paddle_pos
@@ -144,9 +184,9 @@ int main(int argc, char **argv)
  * output   : void
  */
 
-static void paddle_pos(paddle_t *pddl, dimensions_t *wall, char dir)
+static void paddle_pos(paddle_t *pddl, dimensions_t *wall, int dir)
 {
-	if (dir == 'j') { /* moving down */
+	if (dir == 0) { /* moving down */
 		if (pddl->y + pddl->len + 1 <= wall->y)
 			pddl->y++;
 	} else {          /* moving up (must be 'k') */
@@ -202,7 +242,7 @@ static void paddle_collisions(ball_t *inpt_ball, paddle_t *inpt_paddle)
 			inpt_ball->y <= 
 			inpt_paddle->y + inpt_paddle->len) {
 
-			inpt_paddle->score++;
+			score++;
 			inpt_ball->x_vel *= -1;
 		}
 	}
@@ -220,7 +260,7 @@ static void paddle_collisions(ball_t *inpt_ball, paddle_t *inpt_paddle)
  */
 static void draw_ball(ball_t *input)
 {
-	setPixelOn(input->y, input->x, 0xFFFFFF);
+	setPixelOn(input->y, input->x, COLOUR_WHITE);
 	return;
 }
 
@@ -229,20 +269,24 @@ static void draw_paddle(paddle_t *paddle)
 	int i;
 
 	for (i = 0; i < paddle->len; i++) {
-		setPixelOn(paddle->y + i, paddle->x, 0xFFFFFF);
+		setPixelOn(paddle->y + i, paddle->x, COLOUR_GREEN);
 	}
 
 	return;
 }
 
-//void draw_score(paddle_t *inpt_paddle, dimensions_t *wall)
-//{
-//	mvprintw(0, wall->x / 2 - 7, "Score: %d", inpt_paddle->score);
-//
-//	return;
-//}
+static void displayGameOver()
+{
+	// LEDMatrix_clear();
+	clearMatrix();
+	// TODO: display char here
+#ifdef MATRIX_DRIVER
+	Driver_writeData(m);
+#else
+	LEDMatrix_update(m);
+#endif
 
-/* -------------------------------------------------------------------------- */
+}
 
 /*
  * function : kbdhit
@@ -253,10 +297,9 @@ static void draw_paddle(paddle_t *paddle)
 
 int kbdhit()
 {
-	int key = getch();
+	int key = getchar();
 
-	if (key != ERR) {
-		ungetch(key);
+	if (key != 0) {
 		return 0;
 	} else {
 		return 1;

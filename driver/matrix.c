@@ -22,7 +22,7 @@
 #define B_PIN 77
 #define C_PIN 70
 
-#define DELAY_IN_US 4500
+#define DELAY_IN_US 1000
 /* LED Screen Values */
 static int screen[32][16];
 
@@ -224,14 +224,21 @@ static void refresh_screen(void)
             set_colour_bottom(screen[colNum][rowNum + 8]);
             bang_clock();
         }
-
+        //does latch need to be clocked?
         bang_latch();
         //usleep_range is prefered over msleep for values <20ms
-        usleep_range(DELAY_IN_US, DELAY_IN_US);
+        // usleep_range(DELAY_IN_US, DELAY_IN_US);
     }
 
     return;
 }
+
+// static void set_pixel(int x, int y, int colour)
+// {
+//     screen[y][x] = colour;
+
+//     return;
+// }
 
 /******************************************************
  * Callbacks
@@ -239,15 +246,37 @@ static void refresh_screen(void)
 static ssize_t write(struct file *file,
                      const char *buff, size_t count, loff_t *ppos)
 {
-    memset(screen, 0, sizeof(screen));
+    // memset(screen, 0, sizeof(screen));
     if (copy_from_user(screen, buff, count))
     {
         return -EFAULT;
     }
 
-    printk(KERN_INFO "Read %p, with size %d\n", screen, count);
-    
+    // printk(KERN_INFO "Read %p, with size %d\n", screen, count);
     refresh_screen();
+
+    // int i;
+    // printk(KERN_INFO "Starting program!\n");
+
+    // for (i = 0; i < 32; i++)
+    // {
+    //     int j;
+    //     int k;
+    //     memset(screen, 0, sizeof(screen));
+    //     printk(KERN_INFO "Starting set_pixel loop!\n");
+    //     // for (j = 7; j < 8; j++)
+    //     {
+    //         set_pixel(2, i, 1);
+    //     }
+
+    //     printk(KERN_INFO "Starting refresh loop!\n");
+    //     for (k = 0; k < 250; k++)
+    //     {
+    //         refresh_screen();
+    //     }
+    // }
+
+    // printk(KERN_INFO "Done!\n");
     return count;
 }
 
@@ -268,7 +297,7 @@ static struct miscdevice matrix_driver = {
 static int __init matrix_init(void)
 {
     int ret;
-    printk(KERN_INFO "----> matrix driver init(): file /dev/%s.\n", MY_DEVICE_FILE);
+    printk(KERN_INFO "----> matrix driver init(): file /dev/%s. JAKSHDJKAHSKDJHKJASD NEW STUFF\n", MY_DEVICE_FILE);
 
     ret = misc_register(&matrix_driver);
     init_pins();

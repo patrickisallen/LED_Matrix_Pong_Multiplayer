@@ -9,10 +9,10 @@ ifneq (${KERNELRELEASE},)
 # Otherwise we were called directly from the command line.
 # Invoke the kernel build system.
 else
-	KERNEL_SOURCE := ${HOME}/Documents/433/CMPT433-A4/bb-kernel/KERNEL/
+	KERNEL_SOURCE := ${HOME}/cmpt433/work/bb-kernel/KERNEL/
 	PWD := $(shell pwd)
 	# Linux kernel 4.4 (which has cape manager support)
-	CC=${HOME}/Documents/433/CMPT433-A4/bb-kernel/dl/gcc-linaro-5.4.1-2017.05-x86_64_arm-linux-gnueabihf/bin/arm-linux-gnueabihf-
+	CC=${HOME}/cmpt433/work/bb-kernel/dl/gcc-linaro-5.4.1-2017.05-x86_64_arm-linux-gnueabihf/bin/arm-linux-gnueabihf-
 	BUILD=bone19
 	CORES=4
 	image=zImage
