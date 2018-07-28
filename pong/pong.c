@@ -35,7 +35,7 @@ typedef struct dimensions {
 static void draw_ball(ball_t *input);
 static void draw_paddle(paddle_t *paddle);
 //void draw_usr1_score(paddle_t *inpt_paddle, dimensions_t *wall);
-static void paddle_collisions(ball_t *inpt_ball, paddle_t *inpt_paddle);
+static void paddle_collisions(ball_t *inpt_ball, paddle_t *inpt_paddle, int paddle);
 static void paddle_pos(paddle_t *pddl, dimensions_t *wall, int dir);
 
 static int wall_collisions(ball_t *usr_ball, dimensions_t *walls);
@@ -54,6 +54,7 @@ static paddle_t usr2_paddle = { 0 };
 static ball_t usr_ball = { 0 }; /* set the ball */
 dimensions_t walls = {SCREEN_WIDTH, SCREEN_HEIGHT};
 static int usr1_score = 0;
+static int usr2_score = 0;
 
 static pthread_t pthreadPong;
 static _Bool run = false;
@@ -78,7 +79,7 @@ static void pongGameInit() {
 	usr1_score = 0;
 	usr1_paddle.x = 3;
 	usr1_paddle.y = 11;
-	usr2_paddle.x = 29
+	usr2_paddle.x = 29;
 	usr2_paddle.y = 11;
 	usr1_paddle.len = walls.y / 4;
 	usr2_paddle.len = walls.y / 4;
@@ -97,8 +98,7 @@ static void clearMatrix()
 		for (int y = 0; y < SCREEN_HEIGHT; y++){
 			m[x][y] = 0;
 		}
-	}UDP_init();
-	UDP_client_init();
+	}
 }
 
 static void* runPong()
@@ -161,7 +161,6 @@ static void* runPong()
  * input    : paddle_t *inpt_paddle, dimensions_t *wall, char dir
  * output   : void
  */
-<
 static void paddle_pos(paddle_t *pddl, dimensions_t *wall, int dir)
 {
 	if (dir == 0) { /* moving down */
