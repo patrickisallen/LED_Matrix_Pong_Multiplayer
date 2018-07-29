@@ -25,9 +25,9 @@
 static pthread_mutex_t mainMutex = PTHREAD_MUTEX_INITIALIZER;
 
 // initialize the module threads
-static void init()
+static void init(int player)
 {
-	Pong_init();
+	Pong_init(player);
 	LEDMatrix_init();
 	Joystick_init();
 	Display_init();
@@ -46,7 +46,10 @@ int main(int argc, char* args[])
 	// random seed
 	srand(time(NULL));
 
-	init();
+	int player;
+	sscanf (args[1],"%d",&player);
+
+	init(player);
 
 	pthread_mutex_init(&mainMutex, NULL);
 	// call the mutex lock twice so that the main thread waits until the lock is free

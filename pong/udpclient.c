@@ -8,20 +8,25 @@
 #define BUFSIZE 1024
 pthread_t t2;
 
+static int clientSocket, portNum, nBytes;
+static char buffer[BUFSIZE];
+struct sockaddr_in serverAddr;
+socklen_t addr_size;
+void UDP_send_message(char *buf) {
+	int bufSendSize = strlen(buf);
+	sendto(clientSocket,buf,bufSendSize,0,(struct sockaddr *)&serverAddr,addr_size);
+}
+
 
 void UDP_client() {
-  printf("Starting UDP client\n")
-;  int clientSocket, portNum, nBytes;
-  char buffer[BUFSIZE];
-  struct sockaddr_in serverAddr;
-  socklen_t addr_size;
+  printf("Starting UDP client\n");
 
   /*Create UDP socket*/
   clientSocket = socket(PF_INET, SOCK_DGRAM, 0);
 
   /*Configure settings in address struct*/
-  const char* server_name = "192.168.7.2";
-  portNum = 12345;
+  const char* server_name = "169.254.0.2";
+  portNum = 12346;
   serverAddr.sin_family = AF_INET;
   serverAddr.sin_port = htons(portNum);
   inet_pton(AF_INET, server_name, &serverAddr.sin_addr);

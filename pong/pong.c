@@ -59,10 +59,13 @@ static int usr2_score = 0;
 static pthread_t pthreadPong;
 static _Bool run = false;
 static _Bool playing = false;
+static int playerID = 1;
 
 static void* runPong();
 
-void Pong_init() {
+void Pong_init(int player) {
+
+	playerID = player;
 
 	/* initialize curses */
 //	initscr();
@@ -111,6 +114,7 @@ static void* runPong()
 
 			draw_ball(&usr_ball);
 			draw_paddle(&usr1_paddle);
+			draw_paddle(&usr2_paddle);
 	//			refresh(); /* draw to term */
 			LEDMatrix_update(m); // TODO scott: this should call the driver to update the matrix
 			clearMatrix();
@@ -128,14 +132,25 @@ static void* runPong()
 				LEDMatrix_clear();
 				break;
 			}
-			//}
 
-			/* we fell out, get the key press */
-			if (Joystick_getDirection() == UP){
-				paddle_pos(&usr1_paddle, &walls, 1);
-			} else {
-				if (Joystick_getDirection() == DOWN){
-					paddle_pos(&usr1_paddle, &walls, 0);
+
+			if(playerID == 1) {
+				if (Joystick_getDirection() == UP){
+					paddle_pos(&usr1_paddle, &walls, 1);
+				} else {
+					if (Joystick_getDirection() == DOWN){
+						paddle_pos(&usr1_paddle, &walls, 0);
+					}
+				}
+			}else {
+				if (Joystick_getDirection() == UP){
+					paddle_pos(&usr2_paddle, &walls, 1);
+					//UDP_send_message(UP);
+				} else {
+					if (Joystick_getDirection() == DOWN){
+						paddle_pos(&usr2_paddle, &walls, 0);
+						//UDP_send_message(DOWN);
+					}
 				}
 			}
 
@@ -191,12 +206,8 @@ static int wall_collisions(ball_t *usr_ball, dimensions_t *walls)
 		return 1;
 	}
 
-	// /* check for X */
-	// if (usr_ball->next_x >= walls->x) {
-	// 	usr_ball->x_vel *= -1;
-	// } else {
-	// 	usr_ball->x += usr_ball->x_vel;
-	// }
+
+	 usr_ball->x += usr_ball->x_vel;
 
 	/* check for Y */
 	if (usr_ball->next_y >= walls->y || usr_ball->next_y < 0) {
@@ -218,9 +229,7 @@ static void paddle_collisions(ball_t *inpt_ball, paddle_t *inpt_paddle, int padd
 	*/
 
 	if (inpt_ball->next_x == inpt_paddle->x && paddle == 1) {
-		if (inpt_paddle->y <= inpt_ball->y &&
-			inpt_ball->y <= 
-			inpt_paddle->y + inpt_paddle->len) {
+		if (inpt_paddle->y <= inpt_ball->y && inpt_ball->y <= inpt_paddle->y + inpt_paddle->len) {
 			usr1_score++;
 			inpt_ball->x_vel *= -1;
 		}
