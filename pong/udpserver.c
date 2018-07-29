@@ -41,6 +41,7 @@ static int reset;
 static int n;
 static int argStr2Int;
 static char *ptr;
+static int playerID;
 
 int sendDatagram(char *inputStr) {
     int inputLen = strlen(inputStr) + 1; //+1 for additional null terminating character(s)
@@ -63,7 +64,11 @@ void UDP_stop() {
 }
 
 void UDP_server() {
-    portno = 12345;
+	if (playerID == 1) {
+		portno = 12345;
+	} else {
+		portno = 12346;
+	}
 
     sockfd = socket(AF_INET, SOCK_DGRAM, 0);
     if (sockfd < 0) {
@@ -129,7 +134,8 @@ void UDP_server() {
 
 }
 
-void UDP_init() {
+void UDP_init(int player) {
+	playerID = player;
     int ret2 = pthread_create(&t2, NULL, (void *) &UDP_server, NULL);
     if(ret2) {
         fprintf(stderr, "Error - pthread_create() return code: %d\n", ret2);

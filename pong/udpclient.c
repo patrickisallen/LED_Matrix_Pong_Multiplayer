@@ -11,6 +11,7 @@ pthread_t t2;
 static int clientSocket, portNum, nBytes;
 static char buffer[BUFSIZE];
 struct sockaddr_in serverAddr;
+static int playerID;
 socklen_t addr_size;
 void UDP_send_message(char *buf) {
 	int bufSendSize = strlen(buf);
@@ -18,15 +19,21 @@ void UDP_send_message(char *buf) {
 }
 
 
-void UDP_client() {
+void UDP_client(int player) {
   printf("Starting UDP client\n");
 
   /*Create UDP socket*/
   clientSocket = socket(PF_INET, SOCK_DGRAM, 0);
 
   /*Configure settings in address struct*/
-  const char* server_name = "169.254.0.2";
-  portNum = 12346;
+  if (playerID == 1) {
+	  const char* server_name = "169.254.0.1";
+	  portNum = 12346;
+  } else {
+	  const char* server_name = "169.254.0.2";
+	  portNum = 12345;
+  }
+
   serverAddr.sin_family = AF_INET;
   serverAddr.sin_port = htons(portNum);
   inet_pton(AF_INET, server_name, &serverAddr.sin_addr);
@@ -53,7 +60,8 @@ void UDP_client() {
   }
 }
 
-void UDP_client_init() {
+void UDP_client_init(int player) {
+	playerID = player;
     int ret3 = pthread_create(&t2, NULL, (void *) &UDP_client, NULL);
     if(ret3) {
         fprintf(stderr, "Error - pthread_create() return code: %d\n", ret3);
