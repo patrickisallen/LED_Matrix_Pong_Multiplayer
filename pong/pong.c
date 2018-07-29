@@ -44,7 +44,6 @@ static void paddle_pos(paddle_t *pddl, dimensions_t *wall, int dir);
 
 static int wall_collisions(ball_t *usr_ball, dimensions_t *walls);
 static void displayGameOver();
-int kbdhit();
 
 // matrix of x y
 static int m[SCREEN_WIDTH][SCREEN_HEIGHT];
@@ -306,22 +305,4 @@ static void displayGameOver()
 	// TODO: display char here
 	LEDMatrix_update(m);
 
-}
-
-/*
- * function : kbdhit
- * purpose  : find out if we've got something in the input buffer
- * input    : void
- * output   : 0 on none, 1 on we have a key
- */
-
-int kbdhit()
-{
-	int key = getchar();
-
-	if (key != 0) {
-		return 0;
-	} else {
-		return 1;
-	}
 }
