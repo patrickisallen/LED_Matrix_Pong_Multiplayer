@@ -3,7 +3,7 @@
 
 
 
-void UDP_client_init(void);
+void UDP_client_init(int player);
 void UDP_stop(void);
 
 #endif

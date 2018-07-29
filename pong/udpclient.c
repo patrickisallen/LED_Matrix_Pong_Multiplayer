@@ -13,24 +13,33 @@ static char buffer[BUFSIZE];
 struct sockaddr_in serverAddr;
 static int playerID;
 socklen_t addr_size;
+
 void UDP_send_message(char *buf) {
 	int bufSendSize = strlen(buf);
 	sendto(clientSocket,buf,bufSendSize,0,(struct sockaddr *)&serverAddr,addr_size);
 }
 
-
 void UDP_client(int player) {
   printf("Starting UDP client\n");
 
+void UDP_send_message(char *buf) {
+  int bufSendSize = strlen(buf);
+  sendto(clientSocket,buf,bufSendSize,0,(struct sockaddr *)&serverAddr,addr_size);
+}
+
+void UDP_client() {
+  printf("Starting UDP client\n");
   /*Create UDP socket*/
   clientSocket = socket(PF_INET, SOCK_DGRAM, 0);
 
+  char* server_name;
+
   /*Configure settings in address struct*/
   if (playerID == 1) {
-	  const char* server_name = "169.254.0.1";
+	  server_name = "169.254.0.1";
 	  portNum = 12346;
   } else {
-	  const char* server_name = "169.254.0.2";
+	  server_name = "169.254.0.2";
 	  portNum = 12345;
   }
 

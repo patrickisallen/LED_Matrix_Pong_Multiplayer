@@ -31,8 +31,8 @@ static void init(int player)
 	LEDMatrix_init();
 	Joystick_init();
 	Display_init();
-	UDP_init();
-	UDP_client_init();
+	UDP_init(player);
+	UDP_client_init(player);
 }
 
 static void terminate()
