@@ -84,6 +84,7 @@ void Pong_init(int player) {
 }
 
 static void pongGameInit() {
+
 	usr1_score = 0;
 	usr2_score = 0;
 	usr1_paddle.x = 1;
