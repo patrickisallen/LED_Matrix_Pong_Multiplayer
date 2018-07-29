@@ -7,15 +7,18 @@
 
 #define BUFSIZE 1024
 pthread_t t2;
-
-
-void UDP_client() {
-  printf("Starting UDP client\n")
-;  int clientSocket, portNum, nBytes;
-  char buffer[BUFSIZE];
+  static int clientSocket, portNum, nBytes;
+  static char buffer[BUFSIZE];
   struct sockaddr_in serverAddr;
   socklen_t addr_size;
 
+void UDP_send_message(char *buf) {
+  int bufSendSize = strlen(buf);
+  sendto(clientSocket,buf,bufSendSize,0,(struct sockaddr *)&serverAddr,addr_size);
+}
+
+void UDP_client() {
+  printf("Starting UDP client\n");
   /*Create UDP socket*/
   clientSocket = socket(PF_INET, SOCK_DGRAM, 0);
 

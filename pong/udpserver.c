@@ -41,6 +41,7 @@ static int reset;
 static int n;
 static int argStr2Int;
 static char *ptr;
+pthread_mutex_t copyLock;
 
 int sendDatagram(char *inputStr) {
     int inputLen = strlen(inputStr) + 1; //+1 for additional null terminating character(s)
@@ -101,7 +102,9 @@ void UDP_server() {
 		printf("server received %d bytes\n", n);
 
         //Parse buffer
+        pthread_mutex_lock(&copyLock);
         strcpy(bufCpy, buf);
+        pthread_mutex_unlock(&copyLock);
         char *p = strtok (bufCpy, " ");       
         bufArr[0] = p;
         p = strtok (NULL, " ");
@@ -126,10 +129,16 @@ void UDP_server() {
 	}
     free(bufCpy);
     free(buf);
+}
 
+char* UDP_get_buff() {
+    return bufCpy;
 }
 
 void UDP_init() {
+    if (pthread_mutex_init(&copyLock, NULL) != 0) {
+        printf("Init lock has failed\n");
+    }
     int ret2 = pthread_create(&t2, NULL, (void *) &UDP_server, NULL);
     if(ret2) {
         fprintf(stderr, "Error - pthread_create() return code: %d\n", ret2);
