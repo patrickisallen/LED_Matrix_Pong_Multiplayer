@@ -40,8 +40,8 @@ typedef struct dimensions {
 
 static void draw_ball(ball_t *input);
 static void draw_paddle(paddle_t *paddle);
-//void draw_score(paddle_t *inpt_paddle, dimensions_t *wall);
-static void paddle_collisions(ball_t *inpt_ball, paddle_t *inpt_paddle);
+//void draw_usr1_score(paddle_t *inpt_paddle, dimensions_t *wall);
+static void paddle_collisions(ball_t *inpt_ball, paddle_t *inpt_paddle, int paddle);
 static void paddle_pos(paddle_t *pddl, dimensions_t *wall, int dir);
 
 static int wall_collisions(ball_t *usr_ball, dimensions_t *walls);
@@ -56,10 +56,12 @@ void setPixelOn(int x, int y, int colour) {
 	m[y][x] = colour;
 }
 
-static paddle_t usr_paddle = { 0 }; /* set the paddle variables */
+static paddle_t usr1_paddle = { 0 }; /* set the paddle variables */
+static paddle_t usr2_paddle = { 0 };
 static ball_t usr_ball = { 0 }; /* set the ball */
 dimensions_t walls = {SCREEN_WIDTH, SCREEN_HEIGHT};
-static int score = 0;
+static int usr1_score = 0;
+static int usr2_score = 0;
 
 static pthread_t pthreadPong;
 static _Bool run = false;
@@ -86,10 +88,13 @@ void Pong_init() {
 }
 
 static void pongGameInit() {
-	score = 0;
-	usr_paddle.x = 5;
-	usr_paddle.y = 11;
-	usr_paddle.len = walls.y / 4;
+	usr1_score = 0;
+	usr1_paddle.x = 3;
+	usr1_paddle.y = 11;
+	usr2_paddle.x = 29;
+	usr2_paddle.y = 11;
+	usr1_paddle.len = walls.y / 4;
+	usr2_paddle.len = walls.y / 4;
 
 	usr_ball.x = walls.x / 2;
 	usr_ball.y = walls.y / 2;
@@ -117,7 +122,7 @@ static void* runPong()
 	//			clear(); /* clear screen of all printed chars */
 
 			draw_ball(&usr_ball);
-			draw_paddle(&usr_paddle);
+			draw_paddle(&usr1_paddle);
 	//			refresh(); /* draw to term */
 
 #ifdef MATRIX_DRIVER
@@ -133,7 +138,8 @@ static void* runPong()
 			usr_ball.next_y = usr_ball.y + usr_ball.y_vel;
 
 			/* check for collisions */
-			paddle_collisions(&usr_ball, &usr_paddle);
+			paddle_collisions(&usr_ball, &usr1_paddle, 1);
+			paddle_collisions(&usr_ball, &usr2_paddle, 2);
 			if (wall_collisions(&usr_ball, &walls)) {
 				playing = false;
 				clearMatrix();
@@ -154,19 +160,19 @@ static void* runPong()
 
 			/* we fell out, get the key press */
 			if (Joystick_getDirection() == UP){
-				paddle_pos(&usr_paddle, &walls, 1);
+				paddle_pos(&usr1_paddle, &walls, 1);
 			} else {
 				if (Joystick_getDirection() == DOWN){
-					paddle_pos(&usr_paddle, &walls, 0);
+					paddle_pos(&usr1_paddle, &walls, 0);
 				}
 			}
 
-			Display_num(score);
+			Display_num(usr1_score);
 		}
 
 	//	endwin();
 
-		printf("GAME OVER\nFinal Score: %d\n", score);
+		printf("GAME OVER\nFinal usr1_score: %d\n", usr1_score);
 		displayGameOver();
 		while(Joystick_getDirection() != CENTER){}
 		playing = true;
@@ -183,7 +189,6 @@ static void* runPong()
  * input    : paddle_t *inpt_paddle, dimensions_t *wall, char dir
  * output   : void
  */
-
 static void paddle_pos(paddle_t *pddl, dimensions_t *wall, int dir)
 {
 	if (dir == 0) { /* moving down */
@@ -210,13 +215,16 @@ static int wall_collisions(ball_t *usr_ball, dimensions_t *walls)
 	if (usr_ball->next_x < 0) {
 		return 1;
 	}
-
-	/* check for X */
-	if (usr_ball->next_x >= walls->x) {
-		usr_ball->x_vel *= -1;
-	} else {
-		usr_ball->x += usr_ball->x_vel;
+	if (usr_ball->next_x > SCREEN_WIDTH) {
+		return 1;
 	}
+
+	// /* check for X */
+	// if (usr_ball->next_x >= walls->x) {
+	// 	usr_ball->x_vel *= -1;
+	// } else {
+	// 	usr_ball->x += usr_ball->x_vel;
+	// }
 
 	/* check for Y */
 	if (usr_ball->next_y >= walls->y || usr_ball->next_y < 0) {
@@ -230,19 +238,25 @@ static int wall_collisions(ball_t *usr_ball, dimensions_t *walls)
 
 /* -------------------------------------------------------------------------- */
 
-static void paddle_collisions(ball_t *inpt_ball, paddle_t *inpt_paddle)
+static void paddle_collisions(ball_t *inpt_ball, paddle_t *inpt_paddle, int paddle)
 {
 	/* 
 	* simply check if next_% (because we set the next_x && next_y first) 
 	* is within the bounds of the paddle's CURRENT position
 	*/
 
-	if (inpt_ball->next_x == inpt_paddle->x) {
+	if (inpt_ball->next_x == inpt_paddle->x && paddle == 1) {
 		if (inpt_paddle->y <= inpt_ball->y &&
 			inpt_ball->y <= 
 			inpt_paddle->y + inpt_paddle->len) {
+			usr1_score++;
+			inpt_ball->x_vel *= -1;
+		}
+	}
 
-			score++;
+	if(inpt_ball->next_x == inpt_paddle->x && paddle == 2) {
+		if (inpt_paddle->y <= inpt_ball->y && inpt_ball->y <= inpt_paddle->y + inpt_paddle->len) {
+			usr2_score++;
 			inpt_ball->x_vel *= -1;
 		}
 	}

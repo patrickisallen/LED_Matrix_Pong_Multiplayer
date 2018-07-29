@@ -4,7 +4,7 @@ TARGET = pong
 OUTDIR = $(HOME)/cmpt433/public/myApps
 CFLAGS = -Wall -g -std=c99 -D _POSIX_C_SOURCE=200809L -Werror -g
 PTHREAD = -pthread
-SOURCES = main.c pong.c helper.c joystick.c gpio.c display.c
+SOURCES = main.c pong.c helper.c joystick.c gpio.c display.c udpserver.c udpclient.c
 
 #LFLAGS = -L$(HOME)/cmpt433/public/asound_lib_BBB
 
@@ -16,6 +16,5 @@ pong_driver:
 pong_user:
 	$(CC_C) $(CFLAGS) $(PTHREAD) $(SOURCES) ledMatrix.c -o $(OUTDIR)/$(TARGET) -lpthread
 
-	
 clean:
 	rm $(OUTDIR)/$(TARGET)
