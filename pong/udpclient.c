@@ -19,14 +19,6 @@ void UDP_send_message(char *buf) {
 	sendto(clientSocket,buf,bufSendSize,0,(struct sockaddr *)&serverAddr,addr_size);
 }
 
-void UDP_client(int player) {
-  printf("Starting UDP client\n");
-
-void UDP_send_message(char *buf) {
-  int bufSendSize = strlen(buf);
-  sendto(clientSocket,buf,bufSendSize,0,(struct sockaddr *)&serverAddr,addr_size);
-}
-
 void UDP_client() {
   printf("Starting UDP client\n");
   /*Create UDP socket*/
