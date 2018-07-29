@@ -4,7 +4,6 @@
 
 
 void UDP_client_init(int player);
-void UDP_stop(void);
 void UDP_send_message(char *buf);
 
 #endif

@@ -158,9 +158,9 @@ void UDP_server() {
         }
 
         if(strcmp(buf, "help\n") == 0) {
-            n = sendDatagram(help);
+            sendDatagram(help);
         } else {
-            n = sendDatagram(invalidMsg);
+            sendDatagram(invalidMsg);
         }
 	}
     free(bufCpy);
