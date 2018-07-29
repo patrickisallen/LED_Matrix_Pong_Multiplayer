@@ -14,6 +14,7 @@
 #include "udpserver.h"
 
 #define DELAY 100
+#define MAX_NUM_PLAYERS 2
 
 typedef struct paddle {
 	/* paddle variables */
@@ -116,7 +117,7 @@ void Pong_movePaddle(int player, int dir) {
 }
 
 void Pong_increaseReadyCount(){
-	if (readyCount < 2){
+	if (readyCount < MAX_NUM_PLAYERS){
 		readyCount ++;
 	}
 }
@@ -130,18 +131,16 @@ static void* runPong()
 {
 	while (run) {
 		pongGameInit();
-		while(readyCount < 2) {
+		while(readyCount < MAX_NUM_PLAYERS) {
 			if(Joystick_getDirection() == CENTER && readySelf == 0) {
 				Pong_increaseReadyCount();
 				readySelf = 1;
 				UDP_send_message("r");
 				printf("readyCount: %d\n", readyCount);
 			}
-		}
+		}	
 		
-		
-		
-		while(readyCount == 2) {
+		while(readyCount == MAX_NUM_PLAYERS) {
 
 			draw_ball(&usr_ball);
 			draw_paddle(&usr1_paddle);
