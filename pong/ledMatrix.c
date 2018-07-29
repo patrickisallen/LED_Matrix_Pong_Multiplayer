@@ -40,7 +40,6 @@
 #define BLUE2_PIN 74
 #define CLK_PIN 73      // Arrival of each data
 #define LATCH_PIN 75    // End of a row of data
-#define OE_PIN 71       // Transition from one row to another
 #define A_PIN 72        // Row select
 #define B_PIN 77
 #define C_PIN 70
@@ -71,7 +70,6 @@ static int fileDesc_blue2;
 static int fileDesc_green2;
 static int fileDesc_clk;
 static int fileDesc_latch;
-static int fileDesc_oe;
 static int fileDesc_a;
 static int fileDesc_b;
 static int fileDesc_c;
@@ -131,8 +129,6 @@ static void ledMatrix_setupPins(void)
     fileDesc_clk = open("/sys/class/gpio/gpio73/value", O_WRONLY, S_IWRITE);
     exportAndOut(LATCH_PIN);
     fileDesc_latch = open("/sys/class/gpio/gpio75/value", O_WRONLY, S_IWRITE);
-    exportAndOut(OE_PIN);
-    fileDesc_oe = open("/sys/class/gpio/gpio71/value", O_WRONLY, S_IWRITE);
 
     // Row Select
     exportAndOut(A_PIN);
@@ -293,8 +289,6 @@ static void ledMatrix_setColourBottom(int colour)
 static void ledMatrix_refresh(void)
 {
     for ( int rowNum = 0; rowNum < 8; rowNum++ ) {
-        lseek(fileDesc_oe, 0, SEEK_SET);
-        write(fileDesc_oe, "1", 1);
         ledMatrix_setRow(rowNum);
         for ( int colNum = 0; colNum < 32;  colNum++) {
             ledMatrix_setColourTop(screen[colNum][rowNum]);
@@ -302,8 +296,6 @@ static void ledMatrix_refresh(void)
             ledMatrix_clock();
         }
         ledMatrix_latch();
-        lseek(fileDesc_oe, 0, SEEK_SET);
-        write(fileDesc_oe, "0", 1);
         usleep(DELAY_IN_US); // Sleep for delay
     }
     return;
