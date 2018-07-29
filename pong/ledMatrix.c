@@ -26,6 +26,7 @@
 #include <string.h>
 #include <pthread.h>
 #include <stdbool.h>
+#include <errno.h>
 
 /*** GLOBAL VARIABLE ***/
 /* GPIO PATH */
@@ -360,7 +361,10 @@ void LEDMatrix_init() {
 
 
 	run = true;
-	pthread_create(&pthreadMatrix, NULL, &runMatrix, NULL);
+	if(pthread_create(&pthreadMatrix, NULL, &runMatrix, NULL)) {
+        printf("Error creating thread in pong.c! Error %s\n", strerror(errno));
+		exit(1);
+    }
 
 }
 

@@ -12,6 +12,7 @@
 #include <unistd.h>
 #include <stdbool.h>
 #include <pthread.h>
+#include <errno.h>
 #include <stddef.h>
 
 #include "helper.h"
@@ -61,10 +62,19 @@ int main(int argc, char* args[])
 	srand(time(NULL));
 	init(player);
 
-	pthread_mutex_init(&mainMutex, NULL);
+	if(pthread_mutex_init(&mainMutex, NULL)) {
+		printf("Error creating mutex in main.c! Error %s\n", strerror(errno));
+		exit(1);
+	}
 	// call the mutex lock twice so that the main thread waits until the lock is free
-	pthread_mutex_lock(&mainMutex);
-	pthread_mutex_lock(&mainMutex);
+	if(pthread_mutex_lock(&mainMutex)) {
+		printf("Error locking mutex in main.c! Error %s\n", strerror(errno));
+		exit(1);
+	}
+	if(pthread_mutex_lock(&mainMutex)) {
+		printf("Error locking mutex in main.c! Error %s\n", strerror(errno));
+		exit(1);
+	}
 	terminate();
     return 0;
 }

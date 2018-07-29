@@ -16,6 +16,7 @@
 #include <linux/i2c-dev.h>
 #include <pthread.h>
 #include <string.h>
+#include <errno.h>
 
 #include "helper.h"
 #include "gpio.h"
@@ -100,7 +101,10 @@ void Display_init(void)
 	writeI2cReg(i2cFileDesc, REG_DIRB, 0x00);
 
 	running = true;
-	pthread_create(&pthreadDisplay, NULL, &runDisplay, NULL);
+	if(pthread_create(&pthreadDisplay, NULL, &runDisplay, NULL)) {
+		printf("Error creating mutex in display.c! Error %s\n", strerror(errno));
+		exit(1);
+	}
 }
 
 void Display_shutdown(void)

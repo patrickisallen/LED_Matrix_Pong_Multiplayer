@@ -19,8 +19,10 @@
 #include <arpa/inet.h>
 #include <stdbool.h>
 #include <pthread.h>
-#include "udpserver.h"
 #include <math.h>
+#include <errno.h>
+
+#include "udpserver.h"
 #include "pong.h"
 
 #define BUFSIZE 1024
@@ -99,7 +101,7 @@ void UDP_server() {
     //------------------------------------------------------
     buf = malloc((BUFSIZE+1) * sizeof(char)); // +1 for additioinal terminating characters 
     bufCpy = malloc((BUFSIZE+1) * sizeof(char));
-    	while (keepRunFlag) {
+    while (keepRunFlag) {
 		memset(buf, '\0', BUFSIZE); //Clear buffer / fill it with null terminating characters
 		n = recvfrom(sockfd, buf, BUFSIZE, 0,
 			     (struct sockaddr *)&clientaddr, &addr_size);
@@ -108,17 +110,21 @@ void UDP_server() {
 		printf("server received %d bytes\n", n);
 
         //Parse buffer
-        pthread_mutex_lock(&copyLock);
+        if(pthread_mutex_lock(&copyLock)) {
+            printf("Error locking mutex in udpserver.c! Error %s\n", strerror(errno));
+		    exit(1);
+        }
+
         strcpy(bufCpy, buf);
-        pthread_mutex_unlock(&copyLock);
+        if(pthread_mutex_unlock(&copyLock)) {
+            printf("Error unlocking mutex in udpserver.c! Error %s\n", strerror(errno));
+		    exit(1);
+        }
+        
         char *p = strtok (bufCpy, " ");       
         bufArr[0] = p;
         p = strtok (NULL, " ");
         bufArr[1] = p;
-
-        // printf("Tokenizer output:\n");
-        // printf("[0] = %s\n", bufArr[0]);
-        // printf("[1] = %s\n", bufArr[1]);
 
         //Conversion of output
         if(bufArr[1] != NULL) {
@@ -149,10 +155,8 @@ void UDP_server() {
         }
 
         if(strcmp(buf, "help\n") == 0) {
-            //printf("Help command recognized!\n");
             n = sendDatagram(help);
         } else {
-            //printf("Invalid command!\n");
             n = sendDatagram(invalidMsg);
         }
 	}
@@ -176,9 +180,11 @@ void UDP_init(int player) {
 	playerID = player;
     if (pthread_mutex_init(&copyLock, NULL) != 0) {
         printf("Init lock has failed\n");
+        exit(1);
     }
     int ret2 = pthread_create(&t2, NULL, (void *) &UDP_server, NULL);
     if(ret2) {
         fprintf(stderr, "Error - pthread_create() return code: %d\n", ret2);
+        exit(1);
     }
 }

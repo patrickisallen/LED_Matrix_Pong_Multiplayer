@@ -3,6 +3,9 @@
 #include <pthread.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <errno.h>
+#include <stdlib.h>
+
 #include "helper.h"
 #include "ledMatrix.h"
 #include "joystick.h"
@@ -71,7 +74,10 @@ void Pong_init(int player) {
 	playerID = player;
 	run = true;
 	playing = true;
-	pthread_create(&pthreadPong, NULL, &runPong, NULL);
+	if(pthread_create(&pthreadPong, NULL, &runPong, NULL)) {
+		printf("Error creating thread in pong.c! Error %s\n", strerror(errno));
+		exit(1);
+	}
 
 }
 
