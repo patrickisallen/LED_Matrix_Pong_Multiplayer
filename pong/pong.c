@@ -40,6 +40,7 @@ typedef struct dimensions {
 static void draw_ball(ball_t *input);
 static void draw_paddle(paddle_t *paddle);
 static void paddle_collisions(ball_t *inpt_ball, paddle_t *inpt_paddle, int paddle);
+static void handle_joystick_input(paddle_t *player_paddle);
 static void paddle_pos(paddle_t *pddl, dimensions_t *wall, int dir);
 
 static int wall_collisions(ball_t *usr_ball, dimensions_t *walls);
@@ -164,25 +165,9 @@ static void* runPong()
 			}
 
 			if(playerID == 1) {
-				if (Joystick_getDirection() == UP){
-					paddle_pos(&usr1_paddle, &walls, 1);
-					UDP_send_message("1");
-				} else {
-					if (Joystick_getDirection() == DOWN){
-						paddle_pos(&usr1_paddle, &walls, 0);
-						UDP_send_message("0");
-					}
-				}
+				handle_joystick_input(&usr1_paddle);
 			}else {
-				if (Joystick_getDirection() == UP){
-					paddle_pos(&usr2_paddle, &walls, 1);
-					UDP_send_message("1");
-				} else {
-					if (Joystick_getDirection() == DOWN){
-						paddle_pos(&usr2_paddle, &walls, 0);
-						UDP_send_message("0");
-					}
-				}
+				handle_joystick_input(&usr2_paddle);
 			}
 
 			Display_num(usr1_score);
@@ -197,7 +182,16 @@ static void* runPong()
 
 }
 
-
+static void handle_joystick_input(paddle_t *player_paddle)
+{
+	if (Joystick_getDirection() == UP){
+		paddle_pos(player_paddle, &walls, 1);
+		UDP_send_message("1");
+	} else if (Joystick_getDirection() == DOWN){
+		paddle_pos(player_paddle, &walls, 0);
+		UDP_send_message("0");
+	}
+}
 /*
  * function : paddle_pos
  * purpose  : have a function that will return a proper 'y' value for the paddle
