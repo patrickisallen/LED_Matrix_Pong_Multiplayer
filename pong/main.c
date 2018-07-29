@@ -43,12 +43,22 @@ static void terminate()
 // Main thread
 int main(int argc, char* args[])
 {
-	// random seed
-	srand(time(NULL));
+	if(argc != 2) {
+		printf("Error: player not selected! \
+				Usage: ./pong playerNum to play.\n");
+		return 1;
+	}
 
 	int player;
 	sscanf (args[1],"%d",&player);
 
+	if(player > 2 || player < 1) {
+		printf("Error: Player must be either 1 or 2!\n");
+		return -1;
+	}
+
+	// random seed
+	srand(time(NULL));
 	init(player);
 
 	pthread_mutex_init(&mainMutex, NULL);
