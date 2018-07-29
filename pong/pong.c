@@ -132,10 +132,13 @@ static void* runPong()
 {
 	while (run) {
 		pongGameInit();
-
-		while(Joystick_getDirection() != CENTER){}
-		Pong_increaseReadyCount();
-		UDP_send_message("r");
+		
+		while(Joystick_getDirection() == NONE){}
+		if(Joystick_getDirection() == CENTER && !readySelf) {
+			Pong_increaseReadyCount();
+			UDP_send_message("r");
+		}
+		
 		while(readyCount == 2) {
 			//while (kbdhit()) {
 	//			clear(); /* clear screen of all printed chars */
