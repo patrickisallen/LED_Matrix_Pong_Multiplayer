@@ -118,13 +118,12 @@ void Pong_movePaddle(int player, int dir) {
 
 void Pong_increaseReadyCount(){
 	if (readyCount < 2 && !readySelf){
-		UDP_send_message("r");
 		readySelf = 1;
 		readyCount ++;
 	}
 }
 
-void resetGame() {
+void Pong_resetGame() {
 	readySelf = 0;
 	readyCount = 0;
 }
@@ -136,8 +135,8 @@ static void* runPong()
 
 		while(Joystick_getDirection() != CENTER){}
 		Pong_increaseReadyCount();
-
-		while(playing) {
+		UDP_send_message("r");
+		while(readyCount == 2) {
 			//while (kbdhit()) {
 	//			clear(); /* clear screen of all printed chars */
 
@@ -190,6 +189,7 @@ static void* runPong()
 	//	endwin();
 
 		printf("GAME OVER\nFinal usr1_score: %d\n", usr1_score);
+		Pong_resetGame();
 		displayGameOver();
 	}
 

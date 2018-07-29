@@ -140,6 +140,14 @@ void UDP_server() {
 			}
 		}
 
+        if(strcmp(buf, "r") == 0) {
+            Pong_increaseReadyCount();
+        }
+
+        if(strcmp(buf, "reset\n") == 0) {
+            Pong_resetGame();
+        }
+
         if(strcmp(buf, "help\n") == 0) {
             //printf("Help command recognized!\n");
             n = sendDatagram(help);
