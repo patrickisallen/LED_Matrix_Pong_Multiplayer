@@ -118,7 +118,6 @@ void Pong_movePaddle(int player, int dir) {
 
 void Pong_increaseReadyCount(){
 	if (readyCount < 2 && !readySelf){
-		readySelf = 1;
 		readyCount ++;
 	}
 }
@@ -136,6 +135,7 @@ static void* runPong()
 			while(Joystick_getDirection() == NONE){}
 			if(Joystick_getDirection() == CENTER && readySelf == 0) {
 				Pong_increaseReadyCount();
+				readySelf = 1;
 				UDP_send_message("r");
 				printf("readyCount: %d\n", readyCount);
 			}
