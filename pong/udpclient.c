@@ -15,7 +15,7 @@ static int playerID;
 socklen_t addr_size;
 
 void UDP_send_message(char *buf) {
-	int bufSendSize = strlen(buf);
+	int bufSendSize = strlen(buf) + 1;
 	sendto(clientSocket,buf,bufSendSize,0,(struct sockaddr *)&serverAddr,addr_size);
 }
 
@@ -51,7 +51,8 @@ void UDP_client() {
     nBytes = strlen(buffer) + 1;
     
     /*Send message to server*/
-    sendto(clientSocket,buffer,nBytes,0,(struct sockaddr *)&serverAddr,addr_size);
+    //UDP_send_message("Hello");
+    //sendto(clientSocket,buffer,nBytes,0,(struct sockaddr *)&serverAddr,addr_size);
 
     /*Receive message from server*/
                 nBytes = recvfrom(clientSocket,buffer,1024,0,NULL, NULL);

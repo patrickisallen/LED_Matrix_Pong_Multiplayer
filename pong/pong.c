@@ -7,6 +7,8 @@
 #include "ledMatrix.h"
 #include "joystick.h"
 #include "display.h"
+#include "udpclient.h"
+#include "udpserver.h"
 
 #define DELAY 100
 
@@ -133,23 +135,42 @@ static void* runPong()
 				break;
 			}
 
+			char* command = UDP_get_buff();
+			if(strcmp(command, "1") == 0) {
+				if (playerID == 1) {
+					paddle_pos(&usr2_paddle, &walls, 1);
+				}else {
+					paddle_pos(&usr1_paddle, &walls, 1);
+				}
+			}
+			if(strcmp(command, "0") == 0) {
+				if (playerID == 2) {
+					paddle_pos(&usr2_paddle, &walls, 0);
+				}else {
+					paddle_pos(&usr1_paddle, &walls, 0);
+				}
+
+			}
+
 
 			if(playerID == 1) {
 				if (Joystick_getDirection() == UP){
 					paddle_pos(&usr1_paddle, &walls, 1);
+					UDP_send_message("1");
 				} else {
 					if (Joystick_getDirection() == DOWN){
 						paddle_pos(&usr1_paddle, &walls, 0);
+						UDP_send_message("0");
 					}
 				}
 			}else {
 				if (Joystick_getDirection() == UP){
 					paddle_pos(&usr2_paddle, &walls, 1);
-					//UDP_send_message(UP);
+					UDP_send_message("1");
 				} else {
 					if (Joystick_getDirection() == DOWN){
 						paddle_pos(&usr2_paddle, &walls, 0);
-						//UDP_send_message(DOWN);
+						UDP_send_message("0");
 					}
 				}
 			}
