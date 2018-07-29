@@ -21,6 +21,7 @@
 #include <pthread.h>
 #include "udpserver.h"
 #include <math.h>
+#include "pong.h"
 
 #define BUFSIZE 1024
 #define SHORT_MSG_BUFFER 40
@@ -123,6 +124,21 @@ void UDP_server() {
         if(bufArr[1] != NULL) {
             argStr2Int = (int) strtol(bufArr[1], &ptr, 10);
         }
+
+        if(strcmp(buf, "0") == 0) {
+        	if (playerID == 1) {
+        		Pong_movePaddle(2, 0);
+        	}else {
+        		Pong_movePaddle(1, 0);
+        	}
+        }
+        if(strcmp(buf, "1") == 0) {
+			if (playerID == 1) {
+				Pong_movePaddle(2, 1);
+			}else {
+				Pong_movePaddle(1, 1);
+			}
+		}
 
         if(strcmp(buf, "help\n") == 0) {
             //printf("Help command recognized!\n");

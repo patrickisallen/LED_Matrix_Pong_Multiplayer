@@ -106,6 +106,14 @@ static void clearMatrix()
 	}
 }
 
+void Pong_movePaddle(int player, int dir) {
+	if (player == 1) {
+		paddle_pos(&usr1_paddle, &walls, dir);
+	}else {
+		paddle_pos(&usr2_paddle, &walls, dir);
+	}
+}
+
 static void* runPong()
 {
 	while (run) {
@@ -134,24 +142,6 @@ static void* runPong()
 				LEDMatrix_clear();
 				break;
 			}
-
-			int direction = UDP_get_buff();
-			if(direction == UP) {
-				if (playerID == 1) {
-					paddle_pos(&usr2_paddle, &walls, 1);
-				}else {
-					paddle_pos(&usr1_paddle, &walls, 1);
-				}
-			}
-			if(direction == DOWN) {
-				if (playerID == 2) {
-					paddle_pos(&usr2_paddle, &walls, 0);
-				}else {
-					paddle_pos(&usr1_paddle, &walls, 0);
-				}
-
-			}
-
 
 			if(playerID == 1) {
 				if (Joystick_getDirection() == UP){
