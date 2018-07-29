@@ -136,8 +136,9 @@ void UDP_server() {
     free(buf);
 }
 
-char* UDP_get_buff() {
-    return bufCpy;
+int UDP_get_buff() {
+    int joyVal = atoi(bufCpy);
+    return joyVal;
 }
 
 

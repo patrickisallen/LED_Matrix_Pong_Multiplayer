@@ -135,15 +135,15 @@ static void* runPong()
 				break;
 			}
 
-			char* command = UDP_get_buff();
-			if(strcmp(command, "1") == 0) {
+			int direction = UDP_get_buff();
+			if(direction == UP) {
 				if (playerID == 1) {
 					paddle_pos(&usr2_paddle, &walls, 1);
 				}else {
 					paddle_pos(&usr1_paddle, &walls, 1);
 				}
 			}
-			if(strcmp(command, "0") == 0) {
+			if(direction == DOWN) {
 				if (playerID == 2) {
 					paddle_pos(&usr2_paddle, &walls, 0);
 				}else {

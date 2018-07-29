@@ -6,6 +6,6 @@
 void UDP_init(int player);
 void UDP_stop(void);
 void UDP_server(void);
-char* UDP_get_buff(void);
+int UDP_get_buff(void);
 
 #endif
