@@ -27,6 +27,7 @@
 #define GPIO_RIGHT_DIGIT "44"
 #define MAX_NUM 99
 #define NUM_BASE 10
+#define NUM_OF_DISPLAY_VALUES 10
 
 #define I2CDRV_LINUX_BUS0 "/dev/i2c-0"
 #define I2CDRV_LINUX_BUS1 "/dev/i2c-1"
@@ -39,6 +40,14 @@
 #define REG_OUTA 0x14
 #define REG_OUTB 0x15
 
+typedef struct DisplayValue
+{
+	char digit;
+	unsigned int registerAValue;
+	unsigned int registerBValue;
+} DisplayValue;
+
+
 static _Bool running = false;
 static pthread_t pthreadDisplay;
 static int i2cFileDesc = 0;
@@ -46,9 +55,22 @@ static int i2cFileDesc = 0;
 static char charA = '0'; // left digit
 static char charB = '0'; // right digit
 
-static int initI2cBus(char* bus, int address);
+const static DisplayValue displayValues[NUM_OF_DISPLAY_VALUES] = {
+	{'0', 0xA1, 0x86},
+	{'1', 0x80, 0x12},
+	{'2', 0x31, 0x0E},
+	{'3', 0xB0, 0x06},
+	{'4', 0x90, 0x8A},
+	{'5', 0xB0, 0x8C},
+	{'6', 0xB1, 0x8C},
+	{'7', 0x04, 0x14},
+	{'8', 0xB1, 0x8E},
+	{'9', 0xB0, 0x8E},
+};
+
+static int initI2cBus(char *bus, int address);
 static void writeI2cReg(int i2cFileDesc, unsigned char regAddr, unsigned char value);
-static void* runDisplay();
+static void *runDisplay();
 
 static void initGPIO(void)
 {
@@ -90,18 +112,19 @@ void Display_shutdown(void)
 	close(i2cFileDesc);
 }
 
-
-static int initI2cBus(char* bus, int address)
+static int initI2cBus(char *bus, int address)
 {
 	int i2cFileDesc = open(bus, O_RDWR);
-	if (i2cFileDesc < 0) {
+	if (i2cFileDesc < 0)
+	{
 		printf("I2C DRV: Unable to open bus for read/write (%s)\n", bus);
 		Main_triggerShutdown();
 		exit(1);
 	}
 
 	int result = ioctl(i2cFileDesc, I2C_SLAVE, address);
-	if (result < 0) {
+	if (result < 0)
+	{
 		perror("Unable to set I2C device to slave address.");
 		Main_triggerShutdown();
 		exit(1);
@@ -115,60 +138,29 @@ static void writeI2cReg(int i2cFileDesc, unsigned char regAddr, unsigned char va
 	buff[0] = regAddr;
 	buff[1] = value;
 	int res = write(i2cFileDesc, buff, 2);
-	if (res != 2) {
+	if (res != 2)
+	{
 		perror("Unable to write i2c register");
 		Main_triggerShutdown();
 		exit(1);
 	}
 }
 
-static void charToRegs(char c, unsigned int* regA, unsigned int* regB)
+static void charToRegs(char c, unsigned int *regA, unsigned int *regB)
 {
-	switch(c){
-		case '0' :
-			*regA = 0xA1;
-			*regB = 0x86;
-			break;
-		case '1':
-			*regA = 0x80;
-			*regB = 0x12;
-			break;
-		case '2':
-			*regA = 0x31;
-			*regB = 0x0E;
-			break;
-		case '3':
-			*regA = 0xB0;
-			*regB = 0x06;
-			break;
-		case '4':
-			*regA = 0x90;
-			*regB = 0x8A;
-			break;
-		case '5':
-			*regA = 0xB0;
-			*regB = 0x8C;
-			break;
-		case '6':
-			*regA = 0xB1;
-			*regB = 0x8C;
-			break;
-		case '7':
-			*regA = 0x04;
-			*regB = 0x14;
-			break;
-		case '8':
-			*regA = 0xB1;
-			*regB = 0x8E;
-			break;
-		case '9':
-			*regA = 0xB0;
-			*regB = 0x8E;
-			break;
-		default:
-			*regA = 0x00;
-			*regB = 0x00;
+	for(int i = 0; i < NUM_OF_DISPLAY_VALUES; i++) {
+		DisplayValue value = displayValues[i];
+		if(value.digit == c) {
+			*regA = value.registerAValue;
+			*regB = value.registerBValue;
+			return;
+		}
 	}
+
+
+	//if we didn't find the character in the array use default values
+	*regA = 0x00;
+	*regB = 0x00;
 }
 
 static void displayChar(char c)
@@ -180,25 +172,29 @@ static void displayChar(char c)
 	writeI2cReg(i2cFileDesc, REG_OUTB, regB);
 }
 
-
 void Display_num(long long num)
 {
-	if (num > MAX_NUM){
+	if (num > MAX_NUM)
+	{
 		num = MAX_NUM;
 	}
-	if (num < NUM_BASE){
+	if (num < NUM_BASE)
+	{
 		charA = '0';
-		charB = (int) num + '0';
-	} else {
-		charA = (int) (num / NUM_BASE) + '0';
-		charB = (int) (num % NUM_BASE) + '0';
+		charB = (int)num + '0';
+	}
+	else
+	{
+		charA = (int)(num / NUM_BASE) + '0';
+		charB = (int)(num % NUM_BASE) + '0';
 	}
 }
 
 // thread for display
-static void* runDisplay(void)
+static void *runDisplay(void)
 {
-	while(running){
+	while (running)
+	{
 		// alternate displaying characters on left and right digits
 		displayChar(charA);
 		GPIO_setValue(GPIO_LEFT_DIGIT, "1");
