@@ -239,14 +239,14 @@ static void paddle_collisions(ball_t *inpt_ball, paddle_t *inpt_paddle, int padd
 	* is within the bounds of the paddle's CURRENT position
 	*/
 
-	if (inpt_ball->next_x == inpt_paddle->x && paddle == 1) {
+	if (inpt_ball->next_x <= inpt_paddle->x && paddle == 1) {
 		if (inpt_paddle->y <= inpt_ball->y && inpt_ball->y <= inpt_paddle->y + inpt_paddle->len) {
 			usr1_score++;
 			inpt_ball->x_vel *= -1;
 		}
 	}
 
-	if(inpt_ball->next_x == inpt_paddle->x && paddle == 2) {
+	if(inpt_ball->next_x >= inpt_paddle->x && paddle == 2) {
 		if (inpt_paddle->y <= inpt_ball->y && inpt_ball->y <= inpt_paddle->y + inpt_paddle->len) {
 			usr2_score++;
 			inpt_ball->x_vel *= -1;
