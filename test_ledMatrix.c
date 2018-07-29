@@ -347,9 +347,9 @@ int main()
 //        int ranRow = rand() % 16;
 //        int ranCol = rand() % 32;
 //        int rancolour = rand() % 16;
-        ledMatrix_setMatrix(m);
+        //ledMatrix_setMatrix(m);
         //ledMatrix_setPixel(ranRow, ranCol, rancolour);
-        ledMatrix_refresh();
+        //ledMatrix_refresh();
 
         if(count == 1024) {
             memset(screen, 0, sizeof(screen));
