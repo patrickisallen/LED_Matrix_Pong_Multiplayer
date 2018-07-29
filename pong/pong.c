@@ -36,7 +36,6 @@ typedef struct dimensions {
 
 static void draw_ball(ball_t *input);
 static void draw_paddle(paddle_t *paddle);
-//void draw_usr1_score(paddle_t *inpt_paddle, dimensions_t *wall);
 static void paddle_collisions(ball_t *inpt_ball, paddle_t *inpt_paddle, int paddle);
 static void paddle_pos(paddle_t *pddl, dimensions_t *wall, int dir);
 
@@ -70,12 +69,6 @@ static void* runPong();
 void Pong_init(int player) {
 
 	playerID = player;
-
-	/* initialize curses */
-//	initscr();
-//	noecho();
-//	curs_set(0);
-
 	run = true;
 	playing = true;
 	pthread_create(&pthreadPong, NULL, &runPong, NULL);
@@ -143,14 +136,12 @@ static void* runPong()
 		
 		
 		while(readyCount == 2) {
-			//while (kbdhit()) {
-	//			clear(); /* clear screen of all printed chars */
 
 			draw_ball(&usr_ball);
 			draw_paddle(&usr1_paddle);
 			draw_paddle(&usr2_paddle);
-	//			refresh(); /* draw to term */
-			LEDMatrix_update(m); // TODO scott: this should call the driver to update the matrix
+
+			LEDMatrix_update(m);
 			clearMatrix();
 			Helper_milliSleep(DELAY);
 
@@ -191,8 +182,6 @@ static void* runPong()
 
 			Display_num(usr1_score);
 		}
-
-	//	endwin();
 
 		printf("GAME OVER\nFinal usr1_score: %d\n", usr1_score);
 		Pong_resetGame();
