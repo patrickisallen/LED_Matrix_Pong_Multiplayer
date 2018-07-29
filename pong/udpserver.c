@@ -30,7 +30,7 @@
 #define NUM_ARGS 2
 #define BITS_FOR_ARR_TO_STR 15 //32-bit INT = 12 bits + 2 bits for ',' & ' ' + 1 
 
-_Bool keepRunFlag = true;
+_Bool keepRunningFlag = true;
 pthread_t t2;
 static int sockfd;
 static int portno;
@@ -41,7 +41,6 @@ static char *buf;
 static char *bufCpy;
 static char *bufArr[NUM_ARGS];
 static int reset;
-static int n;
 static int argStr2Int;
 static char *ptr;
 static int playerID;
@@ -49,10 +48,12 @@ pthread_mutex_t copyLock;
 
 int sendDatagram(char *inputStr) {
     int inputLen = strlen(inputStr) + 1; //+1 for additional null terminating character(s)
-    int q = sendto(sockfd, inputStr, inputLen, 0,
+    int characters_sent = sendto(sockfd, inputStr, inputLen, 0,
                 (struct sockaddr *)&clientaddr, addr_size);
-    if (q < 0) { perror("ERROR in sendto"); }
-    return q;
+    if (characters_sent < 0) { 
+        perror("ERROR in sendto"); 
+    }
+    return characters_sent;
 }
 
 
@@ -64,7 +65,7 @@ void appToEnd(char *inputStr, char lineBreak) {
 
 void UDP_stop() {
     pthread_join(t2, NULL);
-    keepRunFlag = false;
+    keepRunningFlag = false;
 }
 
 void UDP_server() {
@@ -101,14 +102,16 @@ void UDP_server() {
     //------------------------------------------------------
     buf = malloc((BUFSIZE+1) * sizeof(char)); // +1 for additioinal terminating characters 
     bufCpy = malloc((BUFSIZE+1) * sizeof(char));
-    while (keepRunFlag) {
-		memset(buf, '\0', BUFSIZE); //Clear buffer / fill it with null terminating characters
-		n = recvfrom(sockfd, buf, BUFSIZE, 0,
+    int bytes_received = 0;
+    while (keepRunningFlag) {        
+		bytes_received = recvfrom(sockfd, buf, BUFSIZE, 0,
 			     (struct sockaddr *)&clientaddr, &addr_size);
-		if (n < 0) { perror("ERROR in recvfrom"); }
+		if (bytes_received < 0) {
+             perror("ERROR in recvfrom"); 
+        }
+		printf("server received %d bytes\n", bytes_received);
 
-		printf("server received %d bytes\n", n);
-
+        buf[bytes_received + 1] = '\0';
         //Parse buffer
         if(pthread_mutex_lock(&copyLock)) {
             printf("Error locking mutex in udpserver.c! Error %s\n", strerror(errno));
