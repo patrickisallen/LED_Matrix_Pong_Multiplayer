@@ -62,6 +62,8 @@ static pthread_t pthreadPong;
 static _Bool run = false;
 static _Bool playing = false;
 static int playerID = 1;
+static int readyCount = 0;
+static int readySelf = 0;
 
 static void* runPong();
 
@@ -114,10 +116,27 @@ void Pong_movePaddle(int player, int dir) {
 	}
 }
 
+void Pong_increaseReadyCount(){
+	if (readyCount < 2 && !readySelf){
+		UDP_send_message("r");
+		readySelf = 1;
+		readyCount ++;
+	}
+}
+
+void resetGame() {
+	readySelf = 0;
+	readyCount = 0;
+}
+
 static void* runPong()
 {
 	while (run) {
 		pongGameInit();
+
+		while(Joystick_getDirection() != CENTER){}
+		Pong_increaseReadyCount();
+
 		while(playing) {
 			//while (kbdhit()) {
 	//			clear(); /* clear screen of all printed chars */
@@ -172,8 +191,6 @@ static void* runPong()
 
 		printf("GAME OVER\nFinal usr1_score: %d\n", usr1_score);
 		displayGameOver();
-		while(Joystick_getDirection() != CENTER){}
-		playing = true;
 	}
 
 	return 0;
