@@ -137,7 +137,13 @@ void UDP_server() {
 }
 
 int UDP_get_buff() {
-    int joyVal = atoi(bufCpy);
+	int joyVal;
+	if (bufCpy != NULL) {
+		joyVal = atoi(bufCpy);
+	} else {
+		joyVal = -1;
+	}
+    bufCpy = NULL;
     return joyVal;
 }
 
