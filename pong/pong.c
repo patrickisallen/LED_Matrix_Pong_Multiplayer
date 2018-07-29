@@ -117,7 +117,7 @@ void Pong_movePaddle(int player, int dir) {
 }
 
 void Pong_increaseReadyCount(){
-	if (readyCount < 2 && !readySelf){
+	if (readyCount < 2){
 		readyCount ++;
 	}
 }
@@ -132,7 +132,6 @@ static void* runPong()
 	while (run) {
 		pongGameInit();
 		while(readyCount < 2) {
-			while(Joystick_getDirection() == NONE){}
 			if(Joystick_getDirection() == CENTER && readySelf == 0) {
 				Pong_increaseReadyCount();
 				readySelf = 1;
