@@ -12,6 +12,7 @@
 #include "display.h"
 #include "udpclient.h"
 #include "udpserver.h"
+#include "ledText.h"
 
 #define DELAY 100
 #define MAX_NUM_PLAYERS 2
@@ -83,11 +84,13 @@ void Pong_init(int player) {
 }
 
 static void pongGameInit() {
+
 	usr1_score = 0;
-	usr1_paddle.x = 3;
-	usr1_paddle.y = 11;
-	usr2_paddle.x = 29;
-	usr2_paddle.y = 11;
+	usr2_score = 0;
+	usr1_paddle.x = 1;
+	usr1_paddle.y = 10;
+	usr2_paddle.x = 30;
+	usr2_paddle.y = 10;
 	usr1_paddle.len = walls.y / 4;
 	usr2_paddle.len = walls.y / 4;
 
@@ -131,17 +134,21 @@ static void* runPong()
 {
 	while (run) {
 		pongGameInit();
+		//change readyCount < MAX_NUM_PLAYERS
 		while(readyCount < MAX_NUM_PLAYERS) {
+			Text_drawLetter(m, 'P', COLOUR_RED, 4, 0);
+			Text_drawLetter(m, 'O', COLOUR_GREEN, 4, 8);
+			Text_drawLetter(m, 'N', COLOUR_BLUE, 4, 16);
+			Text_drawLetter(m, 'G', COLOUR_YELLOW, 4, 24);
+			LEDMatrix_update(m);
 			if(Joystick_getDirection() == CENTER && readySelf == 0) {
 				Pong_increaseReadyCount();
 				readySelf = 1;
 				UDP_send_message("r");
-				printf("readyCount: %d\n", readyCount);
 			}
 		}	
-		
+		//change readyCount == MAX_NUM_PLAYERS
 		while(readyCount == MAX_NUM_PLAYERS) {
-
 			draw_ball(&usr_ball);
 			draw_paddle(&usr1_paddle);
 			draw_paddle(&usr2_paddle);
@@ -169,12 +176,18 @@ static void* runPong()
 				handle_joystick_input(&usr2_paddle);
 			}
 
-			Display_num(usr1_score);
+			if (playerID == 1) {
+				Display_num(usr1_score);
+			} else {
+				Display_num(usr2_score);
+			}
 		}
 
 		printf("GAME OVER\nFinal usr1_score: %d\n", usr1_score);
+		printf("GAME OVER\nFinal usr2_score: %d\n", usr2_score);
 		Pong_resetGame();
 		displayGameOver();
+
 	}
 
 	return 0;
@@ -221,9 +234,13 @@ static int wall_collisions(ball_t *usr_ball, dimensions_t *walls)
 {
 	/* check if we're supposed to leave quick */
 	if (usr_ball->next_x < 0) {
+		usr1_score --;
+		usr2_score ++;
 		return 1;
 	}
 	if (usr_ball->next_x > SCREEN_WIDTH) {
+		usr2_score --;
+		usr1_score ++;
 		return 1;
 	}
 
@@ -253,6 +270,7 @@ static void paddle_collisions(ball_t *inpt_ball, paddle_t *inpt_paddle, int padd
 		if (inpt_paddle->y <= inpt_ball->y && inpt_ball->y <= inpt_paddle->y + inpt_paddle->len) {
 			usr1_score++;
 			inpt_ball->x_vel *= -1;
+			inpt_ball->y_vel *= 1;
 		}
 	}
 
@@ -260,6 +278,7 @@ static void paddle_collisions(ball_t *inpt_ball, paddle_t *inpt_paddle, int padd
 		if (inpt_paddle->y <= inpt_ball->y && inpt_ball->y <= inpt_paddle->y + inpt_paddle->len) {
 			usr2_score++;
 			inpt_ball->x_vel *= -1;
+			inpt_ball->y_vel *= 1;
 		}
 	}
 
@@ -295,7 +314,57 @@ static void displayGameOver()
 {
 	LEDMatrix_clear();
 	clearMatrix();
-	// TODO: display char here
+	Text_drawLetter(m, 'G', COLOUR_GREEN, 0, 0);
+	Text_drawLetter(m, 'A', COLOUR_GREEN, 0, 8);
+	Text_drawLetter(m, 'M', COLOUR_GREEN, 0, 16);
+	Text_drawLetter(m, 'E', COLOUR_GREEN, 0, 24);
+	Text_drawLetter(m, 'O', COLOUR_RED, 8, 0);
+	Text_drawLetter(m, 'V', COLOUR_RED, 8, 8);
+	Text_drawLetter(m, 'E', COLOUR_RED, 8, 16);
+	Text_drawLetter(m, 'R', COLOUR_RED, 8, 24);
 	LEDMatrix_update(m);
+	sleep(1);
+	LEDMatrix_clear();
+	clearMatrix();
+
+	int win = 0;
+
+	if (usr1_score > usr2_score && playerID == 1) {
+		win = 1;
+	}
+	if (usr2_score > usr1_score && playerID == 2) {
+		win = 1;
+	}
+	if (usr2_score == usr1_score) {
+			win = 2;
+	}
+
+	if (win == 1) {
+		Text_drawLetter(m, 'Y', COLOUR_GREEN, 0, 0);
+		Text_drawLetter(m, 'O', COLOUR_GREEN, 0, 8);
+		Text_drawLetter(m, 'U', COLOUR_GREEN, 0, 16);
+		Text_drawLetter(m, 'W', COLOUR_GREEN, 8, 0);
+		Text_drawLetter(m, 'I', COLOUR_GREEN, 8, 8);
+		Text_drawLetter(m, 'N', COLOUR_GREEN, 8, 16);
+	} else if (win == 0) {
+		Text_drawLetter(m, 'Y', COLOUR_RED, 0, 0);
+		Text_drawLetter(m, 'O', COLOUR_RED, 0, 8);
+		Text_drawLetter(m, 'U', COLOUR_RED, 0, 16);
+		Text_drawLetter(m, 'L', COLOUR_RED, 8, 0);
+		Text_drawLetter(m, 'O', COLOUR_RED, 8, 8);
+		Text_drawLetter(m, 'S', COLOUR_RED, 8, 16);
+		Text_drawLetter(m, 'E', COLOUR_RED, 8, 24);
+	} else if (win == 2) {
+		Text_drawLetter(m, 'Y', COLOUR_WHITE, 0, 0);
+		Text_drawLetter(m, 'O', COLOUR_WHITE, 0, 8);
+		Text_drawLetter(m, 'U', COLOUR_WHITE, 0, 16);
+		Text_drawLetter(m, 'T', COLOUR_WHITE, 8, 0);
+		Text_drawLetter(m, 'I', COLOUR_WHITE, 8, 8);
+		Text_drawLetter(m, 'E', COLOUR_WHITE, 8, 16);
+	}
+	LEDMatrix_update(m);
+	sleep(2);
+	LEDMatrix_clear();
+	clearMatrix();
 
 }

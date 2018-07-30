@@ -13,7 +13,10 @@ socklen_t addr_size;
 void UDP_send_message(char *buf)
 {
     int bufSendSize = strlen(buf) + 1;
-    sendto(clientSocket, buf, bufSendSize, 0, (struct sockaddr *)&serverAddr, addr_size);
+    int characters_sent = sendto(clientSocket, buf, bufSendSize, 0, (struct sockaddr *)&serverAddr, addr_size);
+    if (characters_sent < 0) { 
+        perror("ERROR in sendto"); 
+    }
 }
 
 void UDP_client_init(int player)

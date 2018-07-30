@@ -10,8 +10,7 @@
 
 #include "ledMatrix.h"
 
-void drawLetter(int m[][SCREEN_HEIGHT][char c, int topLeftCorner);
-
+void Text_drawLetter(int m[][SCREEN_HEIGHT], char c, int colour, int top, int left);
 
 
 #endif /* PONG_LEDTEXT_H_ */

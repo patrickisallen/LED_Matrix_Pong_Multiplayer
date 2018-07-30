@@ -28,12 +28,12 @@ static pthread_mutex_t mainMutex = PTHREAD_MUTEX_INITIALIZER;
 // initialize the module threads
 static void init(int player)
 {
-	Pong_init(player);
-	LEDMatrix_init();
 	Joystick_init();
+	LEDMatrix_init();
 	Display_init();
 	UDP_init(player);
 	UDP_client_init(player);
+	Pong_init(player);
 }
 
 static void terminate()

@@ -39,10 +39,7 @@ struct sockaddr_in serveraddr;
 struct sockaddr_in clientaddr;
 static char *buf;
 static char *bufCpy;
-static char *bufArr[NUM_ARGS];
 static int reset;
-static int argStr2Int;
-static char *ptr;
 static int playerID;
 pthread_mutex_t copyLock;
 
@@ -54,13 +51,6 @@ int sendDatagram(char *inputStr) {
         perror("ERROR in sendto"); 
     }
     return characters_sent;
-}
-
-
-void appToEnd(char *inputStr, char lineBreak) {
-    int inputLen = strlen(inputStr);
-    inputStr[inputLen] = lineBreak;
-    inputStr[inputLen+1] = '\0';
 }
 
 void UDP_stop() {
@@ -122,16 +112,6 @@ void UDP_server() {
         if(pthread_mutex_unlock(&copyLock)) {
             printf("Error unlocking mutex in udpserver.c! Error %s\n", strerror(errno));
 		    exit(1);
-        }
-        
-        char *p = strtok (bufCpy, " ");       
-        bufArr[0] = p;
-        p = strtok (NULL, " ");
-        bufArr[1] = p;
-
-        //Conversion of output
-        if(bufArr[1] != NULL) {
-            argStr2Int = (int) strtol(bufArr[1], &ptr, 10);
         }
 
         if(strcmp(buf, "0") == 0) {
