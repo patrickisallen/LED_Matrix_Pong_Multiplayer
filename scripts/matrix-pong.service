@@ -1,0 +1,10 @@
+[Unit]
+Description=Pong game to run on BBG with LED matrix
+[Service]
+WorkingDirectory=/opt/matrix
+ExecStart=/bin/bash /opt/matrix/start.sh
+SyslogIdentifier=MatrixPong
+User=root
+Group=root
+[Install]
+WantedBy=multi-user.target
