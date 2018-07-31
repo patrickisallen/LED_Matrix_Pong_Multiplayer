@@ -3,6 +3,9 @@
 #include <pthread.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <errno.h>
+#include <stdlib.h>
+
 #include "helper.h"
 #include "ledMatrix.h"
 #include "joystick.h"
@@ -12,6 +15,7 @@
 #include "ledText.h"
 
 #define DELAY 100
+#define MAX_NUM_PLAYERS 2
 
 typedef struct paddle {
 	/* paddle variables */
@@ -37,13 +41,12 @@ typedef struct dimensions {
 
 static void draw_ball(ball_t *input);
 static void draw_paddle(paddle_t *paddle);
-//void draw_usr1_score(paddle_t *inpt_paddle, dimensions_t *wall);
 static void paddle_collisions(ball_t *inpt_ball, paddle_t *inpt_paddle, int paddle);
+static void handle_joystick_input(paddle_t *player_paddle);
 static void paddle_pos(paddle_t *pddl, dimensions_t *wall, int dir);
 
 static int wall_collisions(ball_t *usr_ball, dimensions_t *walls);
 static void displayGameOver();
-int kbdhit();
 
 // matrix of x y
 static int m[SCREEN_WIDTH][SCREEN_HEIGHT];
@@ -71,15 +74,12 @@ static void* runPong();
 void Pong_init(int player) {
 
 	playerID = player;
-
-	/* initialize curses */
-//	initscr();
-//	noecho();
-//	curs_set(0);
-
 	run = true;
 	playing = true;
-	pthread_create(&pthreadPong, NULL, &runPong, NULL);
+	if(pthread_create(&pthreadPong, NULL, &runPong, NULL)) {
+		printf("Error creating thread in pong.c! Error %s\n", strerror(errno));
+		exit(1);
+	}
 
 }
 
@@ -120,7 +120,7 @@ void Pong_movePaddle(int player, int dir) {
 }
 
 void Pong_increaseReadyCount(){
-	if (readyCount < 2){
+	if (readyCount < MAX_NUM_PLAYERS){
 		readyCount ++;
 	}
 }
@@ -134,27 +134,25 @@ static void* runPong()
 {
 	while (run) {
 		pongGameInit();
-
-		while(readyCount < 1) {
+		//change readyCount < MAX_NUM_PLAYERS
+		while(readyCount < MAX_NUM_PLAYERS) {
 			Text_drawLetter(m, 'P', COLOUR_RED, 4, 0);
 			Text_drawLetter(m, 'O', COLOUR_GREEN, 4, 8);
 			Text_drawLetter(m, 'N', COLOUR_BLUE, 4, 16);
 			Text_drawLetter(m, 'G', COLOUR_YELLOW, 4, 24);
 			LEDMatrix_update(m);
-
 			if(Joystick_getDirection() == CENTER && readySelf == 0) {
 				Pong_increaseReadyCount();
 				readySelf = 1;
 				UDP_send_message("r");
 			}
-		}
-		
-		
-		
-		while(readyCount == 1) {
+		}	
+		//change readyCount == MAX_NUM_PLAYERS
+		while(readyCount == MAX_NUM_PLAYERS) {
 			draw_ball(&usr_ball);
 			draw_paddle(&usr1_paddle);
 			draw_paddle(&usr2_paddle);
+
 			LEDMatrix_update(m);
 			clearMatrix();
 			Helper_milliSleep(DELAY);
@@ -173,25 +171,9 @@ static void* runPong()
 			}
 
 			if(playerID == 1) {
-				if (Joystick_getDirection() == UP){
-					paddle_pos(&usr1_paddle, &walls, 1);
-					UDP_send_message("1");
-				} else {
-					if (Joystick_getDirection() == DOWN){
-						paddle_pos(&usr1_paddle, &walls, 0);
-						UDP_send_message("0");
-					}
-				}
+				handle_joystick_input(&usr1_paddle);
 			}else {
-				if (Joystick_getDirection() == UP){
-					paddle_pos(&usr2_paddle, &walls, 1);
-					UDP_send_message("1");
-				} else {
-					if (Joystick_getDirection() == DOWN){
-						paddle_pos(&usr2_paddle, &walls, 0);
-						UDP_send_message("0");
-					}
-				}
+				handle_joystick_input(&usr2_paddle);
 			}
 
 			if (playerID == 1) {
@@ -212,7 +194,16 @@ static void* runPong()
 
 }
 
-
+static void handle_joystick_input(paddle_t *player_paddle)
+{
+	if (Joystick_getDirection() == UP){
+		paddle_pos(player_paddle, &walls, 1);
+		UDP_send_message("1");
+	} else if (Joystick_getDirection() == DOWN){
+		paddle_pos(player_paddle, &walls, 0);
+		UDP_send_message("0");
+	}
+}
 /*
  * function : paddle_pos
  * purpose  : have a function that will return a proper 'y' value for the paddle
@@ -376,22 +367,4 @@ static void displayGameOver()
 	LEDMatrix_clear();
 	clearMatrix();
 
-}
-
-/*
- * function : kbdhit
- * purpose  : find out if we've got something in the input buffer
- * input    : void
- * output   : 0 on none, 1 on we have a key
- */
-
-int kbdhit()
-{
-	int key = getchar();
-
-	if (key != 0) {
-		return 0;
-	} else {
-		return 1;
-	}
 }
