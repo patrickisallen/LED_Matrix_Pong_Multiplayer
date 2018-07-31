@@ -135,7 +135,7 @@ static void* runPong()
 	while (run) {
 		pongGameInit();
 
-		while(readyCount < 2) {
+		while(readyCount < 1) {
 			Text_drawLetter(m, 'P', COLOUR_RED, 4, 0);
 			Text_drawLetter(m, 'O', COLOUR_GREEN, 4, 8);
 			Text_drawLetter(m, 'N', COLOUR_BLUE, 4, 16);
@@ -151,7 +151,7 @@ static void* runPong()
 		
 		
 		
-		while(readyCount == 2) {
+		while(readyCount == 1) {
 			draw_ball(&usr_ball);
 			draw_paddle(&usr1_paddle);
 			draw_paddle(&usr2_paddle);
