@@ -3,6 +3,9 @@
 #include <pthread.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <errno.h>
+#include <stdlib.h>
+
 #include "helper.h"
 
 #ifdef MATRIX_DRIVER
@@ -13,8 +16,12 @@
 
 #include "joystick.h"
 #include "display.h"
+#include "udpclient.h"
+#include "udpserver.h"
+#include "ledText.h"
 
 #define DELAY 100
+#define MAX_NUM_PLAYERS 2
 
 typedef struct paddle {
 	/* paddle variables */
@@ -40,13 +47,12 @@ typedef struct dimensions {
 
 static void draw_ball(ball_t *input);
 static void draw_paddle(paddle_t *paddle);
-//void draw_usr1_score(paddle_t *inpt_paddle, dimensions_t *wall);
 static void paddle_collisions(ball_t *inpt_ball, paddle_t *inpt_paddle, int paddle);
+static void handle_joystick_input(paddle_t *player_paddle);
 static void paddle_pos(paddle_t *pddl, dimensions_t *wall, int dir);
 
 static int wall_collisions(ball_t *usr_ball, dimensions_t *walls);
 static void displayGameOver();
-int kbdhit();
 
 // matrix of x y
 static int m[SCREEN_WIDTH][SCREEN_HEIGHT];
@@ -66,16 +72,15 @@ static int usr2_score = 0;
 static pthread_t pthreadPong;
 static _Bool run = false;
 static _Bool playing = false;
+static int playerID = 1;
+static int readyCount = 0;
+static int readySelf = 0;
 
 static void* runPong();
 
-void Pong_init() {
+void Pong_init(int player) {
 
-	/* initialize curses */
-//	initscr();
-//	noecho();
-//	curs_set(0);
-
+	playerID = player;
 	run = true;
 	playing = true;
 
@@ -88,11 +93,13 @@ void Pong_init() {
 }
 
 static void pongGameInit() {
+
 	usr1_score = 0;
-	usr1_paddle.x = 3;
-	usr1_paddle.y = 11;
-	usr2_paddle.x = 29;
-	usr2_paddle.y = 11;
+	usr2_score = 0;
+	usr1_paddle.x = 1;
+	usr1_paddle.y = 10;
+	usr2_paddle.x = 30;
+	usr2_paddle.y = 10;
 	usr1_paddle.len = walls.y / 4;
 	usr2_paddle.len = walls.y / 4;
 
@@ -113,14 +120,44 @@ static void clearMatrix()
 	}
 }
 
+void Pong_movePaddle(int player, int dir) {
+	if (player == 1) {
+		paddle_pos(&usr1_paddle, &walls, dir);
+	}else {
+		paddle_pos(&usr2_paddle, &walls, dir);
+	}
+}
+
+void Pong_increaseReadyCount(){
+	if (readyCount < MAX_NUM_PLAYERS){
+		readyCount ++;
+	}
+}
+
+void Pong_resetGame() {
+	readySelf = 0;
+	readyCount = 0;
+}
+
 static void* runPong()
 {
 	while (run) {
 		pongGameInit();
-		while(playing) {
-			//while (kbdhit()) {
-	//			clear(); /* clear screen of all printed chars */
-
+		//change readyCount < MAX_NUM_PLAYERS
+		while(readyCount < MAX_NUM_PLAYERS) {
+			Text_drawLetter(m, 'P', COLOUR_RED, 4, 0);
+			Text_drawLetter(m, 'O', COLOUR_GREEN, 4, 8);
+			Text_drawLetter(m, 'N', COLOUR_BLUE, 4, 16);
+			Text_drawLetter(m, 'G', COLOUR_YELLOW, 4, 24);
+			LEDMatrix_update(m);
+			if(Joystick_getDirection() == CENTER && readySelf == 0) {
+				Pong_increaseReadyCount();
+				readySelf = 1;
+				UDP_send_message("r");
+			}
+		}	
+		//change readyCount == MAX_NUM_PLAYERS
+		while(readyCount == MAX_NUM_PLAYERS) {
 			draw_ball(&usr_ball);
 			draw_paddle(&usr1_paddle);
 	//			refresh(); /* draw to term */
@@ -156,33 +193,41 @@ static void* runPong()
 // #endif 
 				break;
 			}
-			//}
 
-			/* we fell out, get the key press */
-			if (Joystick_getDirection() == UP){
-				paddle_pos(&usr1_paddle, &walls, 1);
-			} else {
-				if (Joystick_getDirection() == DOWN){
-					paddle_pos(&usr1_paddle, &walls, 0);
-				}
+			if(playerID == 1) {
+				handle_joystick_input(&usr1_paddle);
+			}else {
+				handle_joystick_input(&usr2_paddle);
 			}
 
-			Display_num(usr1_score);
+			if (playerID == 1) {
+				Display_num(usr1_score);
+			} else {
+				Display_num(usr2_score);
+			}
 		}
 
-	//	endwin();
-
 		printf("GAME OVER\nFinal usr1_score: %d\n", usr1_score);
+		printf("GAME OVER\nFinal usr2_score: %d\n", usr2_score);
+		Pong_resetGame();
 		displayGameOver();
-		while(Joystick_getDirection() != CENTER){}
-		playing = true;
+
 	}
 
 	return 0;
 
 }
 
-
+static void handle_joystick_input(paddle_t *player_paddle)
+{
+	if (Joystick_getDirection() == UP){
+		paddle_pos(player_paddle, &walls, 1);
+		UDP_send_message("1");
+	} else if (Joystick_getDirection() == DOWN){
+		paddle_pos(player_paddle, &walls, 0);
+		UDP_send_message("0");
+	}
+}
 /*
  * function : paddle_pos
  * purpose  : have a function that will return a proper 'y' value for the paddle
@@ -213,18 +258,18 @@ static int wall_collisions(ball_t *usr_ball, dimensions_t *walls)
 {
 	/* check if we're supposed to leave quick */
 	if (usr_ball->next_x < 0) {
+		usr1_score --;
+		usr2_score ++;
 		return 1;
 	}
 	if (usr_ball->next_x > SCREEN_WIDTH) {
+		usr2_score --;
+		usr1_score ++;
 		return 1;
 	}
 
-	// /* check for X */
-	// if (usr_ball->next_x >= walls->x) {
-	// 	usr_ball->x_vel *= -1;
-	// } else {
-	// 	usr_ball->x += usr_ball->x_vel;
-	// }
+
+	 usr_ball->x += usr_ball->x_vel;
 
 	/* check for Y */
 	if (usr_ball->next_y >= walls->y || usr_ball->next_y < 0) {
@@ -245,19 +290,19 @@ static void paddle_collisions(ball_t *inpt_ball, paddle_t *inpt_paddle, int padd
 	* is within the bounds of the paddle's CURRENT position
 	*/
 
-	if (inpt_ball->next_x == inpt_paddle->x && paddle == 1) {
-		if (inpt_paddle->y <= inpt_ball->y &&
-			inpt_ball->y <= 
-			inpt_paddle->y + inpt_paddle->len) {
+	if (inpt_ball->next_x <= inpt_paddle->x && paddle == 1) {
+		if (inpt_paddle->y <= inpt_ball->y && inpt_ball->y <= inpt_paddle->y + inpt_paddle->len) {
 			usr1_score++;
 			inpt_ball->x_vel *= -1;
+			inpt_ball->y_vel *= 1;
 		}
 	}
 
-	if(inpt_ball->next_x == inpt_paddle->x && paddle == 2) {
+	if(inpt_ball->next_x >= inpt_paddle->x && paddle == 2) {
 		if (inpt_paddle->y <= inpt_ball->y && inpt_ball->y <= inpt_paddle->y + inpt_paddle->len) {
 			usr2_score++;
 			inpt_ball->x_vel *= -1;
+			inpt_ball->y_vel *= 1;
 		}
 	}
 
@@ -293,29 +338,57 @@ static void displayGameOver()
 {
 	// LEDMatrix_clear();
 	clearMatrix();
-	// TODO: display char here
-#ifdef MATRIX_DRIVER
-	Driver_writeData(m);
-#else
+	Text_drawLetter(m, 'G', COLOUR_GREEN, 0, 0);
+	Text_drawLetter(m, 'A', COLOUR_GREEN, 0, 8);
+	Text_drawLetter(m, 'M', COLOUR_GREEN, 0, 16);
+	Text_drawLetter(m, 'E', COLOUR_GREEN, 0, 24);
+	Text_drawLetter(m, 'O', COLOUR_RED, 8, 0);
+	Text_drawLetter(m, 'V', COLOUR_RED, 8, 8);
+	Text_drawLetter(m, 'E', COLOUR_RED, 8, 16);
+	Text_drawLetter(m, 'R', COLOUR_RED, 8, 24);
 	LEDMatrix_update(m);
-#endif
+	sleep(1);
+	LEDMatrix_clear();
+	clearMatrix();
 
-}
+	int win = 0;
 
-/*
- * function : kbdhit
- * purpose  : find out if we've got something in the input buffer
- * input    : void
- * output   : 0 on none, 1 on we have a key
- */
-
-int kbdhit()
-{
-	int key = getchar();
-
-	if (key != 0) {
-		return 0;
-	} else {
-		return 1;
+	if (usr1_score > usr2_score && playerID == 1) {
+		win = 1;
 	}
+	if (usr2_score > usr1_score && playerID == 2) {
+		win = 1;
+	}
+	if (usr2_score == usr1_score) {
+			win = 2;
+	}
+
+	if (win == 1) {
+		Text_drawLetter(m, 'Y', COLOUR_GREEN, 0, 0);
+		Text_drawLetter(m, 'O', COLOUR_GREEN, 0, 8);
+		Text_drawLetter(m, 'U', COLOUR_GREEN, 0, 16);
+		Text_drawLetter(m, 'W', COLOUR_GREEN, 8, 0);
+		Text_drawLetter(m, 'I', COLOUR_GREEN, 8, 8);
+		Text_drawLetter(m, 'N', COLOUR_GREEN, 8, 16);
+	} else if (win == 0) {
+		Text_drawLetter(m, 'Y', COLOUR_RED, 0, 0);
+		Text_drawLetter(m, 'O', COLOUR_RED, 0, 8);
+		Text_drawLetter(m, 'U', COLOUR_RED, 0, 16);
+		Text_drawLetter(m, 'L', COLOUR_RED, 8, 0);
+		Text_drawLetter(m, 'O', COLOUR_RED, 8, 8);
+		Text_drawLetter(m, 'S', COLOUR_RED, 8, 16);
+		Text_drawLetter(m, 'E', COLOUR_RED, 8, 24);
+	} else if (win == 2) {
+		Text_drawLetter(m, 'Y', COLOUR_WHITE, 0, 0);
+		Text_drawLetter(m, 'O', COLOUR_WHITE, 0, 8);
+		Text_drawLetter(m, 'U', COLOUR_WHITE, 0, 16);
+		Text_drawLetter(m, 'T', COLOUR_WHITE, 8, 0);
+		Text_drawLetter(m, 'I', COLOUR_WHITE, 8, 8);
+		Text_drawLetter(m, 'E', COLOUR_WHITE, 8, 16);
+	}
+	LEDMatrix_update(m);
+	sleep(2);
+	LEDMatrix_clear();
+	clearMatrix();
+
 }
