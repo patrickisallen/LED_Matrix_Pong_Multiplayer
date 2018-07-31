@@ -1,0 +1,1 @@
+setenv ipaddr 192.168.2.2;setenv serverip 192.168.2.1;setenv tftproot /home/scott/cmpt433/public/;setenv bootfile ${tftproot}4.4.95-swplumme-bone19.zImage;setenv fdtfile ${tftproot}am335x-bonegreen.dtb;tftp ${loadaddr} ${bootfile};tftp ${fdtaddr} ${fdtfile};setenv bootargs console=ttyO0,115200n8 root=/dev/mmcblk1p1 ro rootfstype=ext4 rootwait;bootz ${loadaddr} - ${fdtaddr}
