@@ -7,13 +7,7 @@
 #include <stdlib.h>
 
 #include "helper.h"
-
-#ifdef MATRIX_DRIVER
-#include "driver.h"
-#else
 #include "ledMatrix.h"
-#endif
-
 #include "joystick.h"
 #include "display.h"
 #include "udpclient.h"
@@ -57,7 +51,6 @@ static void displayGameOver();
 // matrix of x y
 static int m[SCREEN_WIDTH][SCREEN_HEIGHT];
 
-
 void setPixelOn(int x, int y, int colour) {
 	m[y][x] = colour;
 }
@@ -83,12 +76,10 @@ void Pong_init(int player) {
 	playerID = player;
 	run = true;
 	playing = true;
-
-#ifdef MATRIX_DRIVER
-	Driver_init();
-#endif
-
-	pthread_create(&pthreadPong, NULL, &runPong, NULL);
+	if(pthread_create(&pthreadPong, NULL, &runPong, NULL)) {
+		printf("Error creating thread in pong.c! Error %s\n", strerror(errno));
+		exit(1);
+	}
 
 }
 
@@ -160,13 +151,9 @@ static void* runPong()
 		while(readyCount == MAX_NUM_PLAYERS) {
 			draw_ball(&usr_ball);
 			draw_paddle(&usr1_paddle);
-	//			refresh(); /* draw to term */
+			draw_paddle(&usr2_paddle);
 
-#ifdef MATRIX_DRIVER
-			Driver_writeData(m);
-#else
 			LEDMatrix_update(m);
-#endif
 			clearMatrix();
 			Helper_milliSleep(DELAY);
 
@@ -179,18 +166,7 @@ static void* runPong()
 			paddle_collisions(&usr_ball, &usr2_paddle, 2);
 			if (wall_collisions(&usr_ball, &walls)) {
 				playing = false;
-				clearMatrix();
-
-#ifdef MATRIX_DRIVER
-				Driver_writeData(m);
-#else
-				LEDMatrix_update(m);
-#endif			
-// #ifdef MATRIX_DRIVER
-// 				Driver_clear();
-// #else
-// 				LEDMatrix_clear();
-// #endif 
+				LEDMatrix_clear();
 				break;
 			}
 
@@ -336,7 +312,7 @@ static void draw_paddle(paddle_t *paddle)
 
 static void displayGameOver()
 {
-	// LEDMatrix_clear();
+	LEDMatrix_clear();
 	clearMatrix();
 	Text_drawLetter(m, 'G', COLOUR_GREEN, 0, 0);
 	Text_drawLetter(m, 'A', COLOUR_GREEN, 0, 8);
